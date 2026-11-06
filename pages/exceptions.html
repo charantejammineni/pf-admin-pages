@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exceptions & Incidents Center – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Operations Exceptions & Incidents Center</h1>
+            <span class="status-badge status-critical">2 Critical Alarms Requiring Action</span>
+          </div>
+          <p class="page-subtitle">Centralized incident mitigation for refrigerated logistics temperature breaches, inventory variances, and gateway timeouts.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportExceptionsCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Incident Log</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Open Exceptions</span>
+            <div class="kpi-icon-pill warning"><span data-icon="exceptions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;" id="openExcCounter">3 Open</div>
+          <div class="kpi-bottom"><span class="trend-badge down">Active Resolution</span><span class="trend-period">Assigned to duty leads</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Critical Severity</span>
+            <div class="kpi-icon-pill danger"><span data-icon="exceptions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">2 Critical</div>
+          <div class="kpi-bottom"><span class="trend-badge down">High Risk</span><span class="trend-period">Reefer truck & inventory</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Warning Level</span>
+            <div class="kpi-icon-pill warning"><span data-icon="alert"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">1 Warning</div>
+          <div class="kpi-bottom"><span class="trend-badge down">Webhook Timeout</span><span class="trend-period">DevOps team investigating</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Resolved Today</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">2 Resolved</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Mitigated</span><span class="trend-period">Pond DO restored to 6.8mg/L</span></div>
+        </div>
+      </div>
+
+      <!-- Exceptions List & Filter Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="excSearchInput" placeholder="Search exception title, affected module, lead...">
+            </div>
+
+            <select class="select-filter" id="excSeverityFilter">
+              <option value="ALL">All Severities</option>
+              <option value="Critical">Critical Only</option>
+              <option value="Warning">Warning</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+
+            <select class="select-filter" id="excModuleFilter">
+              <option value="ALL">All Modules</option>
+              <option value="GPS Logistics">GPS Logistics</option>
+              <option value="Transactions">Transactions</option>
+              <option value="Fish Management">Fish Management</option>
+              <option value="Pond Aquaculture">Pond Aquaculture</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetExcFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Incident ID</th>
+                <th>Severity</th>
+                <th>Affected System</th>
+                <th>Issue Summary</th>
+                <th>Operational Impact</th>
+                <th>Assigned Incident Lead</th>
+                <th>Reported Time</th>
+                <th>Status</th>
+                <th style="text-align: right;">Mitigation Action</th>
+              </tr>
+            </thead>
+            <tbody id="exceptionsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let excList = [...PondData.exceptions];
+
+  function renderExceptionsTable(list) {
+    const tbody = document.getElementById('exceptionsTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 32px; color: #64748b;">No active exceptions found matching filter.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(e => {
+      let badgeClass = e.severity === 'Critical' ? 'status-critical' : (e.severity === 'Warning' ? 'status-warning' : 'status-optimal');
+      let statusClass = e.status === 'Resolved' ? 'status-optimal' : (e.status === 'In Progress' ? 'status-in-transit' : 'status-warning');
+
+      html += `
+        <tr>
+          <td><span class="cell-primary" style="font-family: monospace;">${e.id}</span></td>
+          <td><span class="status-badge ${badgeClass}">${e.severity}</span></td>
+          <td>
+            <span style="font-size: 12px; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">
+              ${e.module}
+            </span>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">${e.title}</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 2px; max-width: 360px;">${e.description}</div>
+          </td>
+          <td>
+            <div style="font-size: 12px; color: #b91c1c; font-weight: 500; max-width: 260px;">${e.impact}</div>
+          </td>
+          <td><strong style="color: #0f172a; font-size: 13px;">${e.assignedTo}</strong></td>
+          <td><span style="font-size: 12px; color: #64748b;">${e.timestamp}</span></td>
+          <td><span class="status-badge ${statusClass}">${e.status}</span></td>
+          <td style="text-align: right;">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn btn-sm btn-secondary" onclick="viewExceptionDrawer('${e.id}')">Dossier</button>
+              ${e.status !== 'Resolved' ? `
+                <button type="button" class="btn btn-sm btn-success" onclick="resolveException('${e.id}')">Resolve</button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function filterExceptions() {
+    const search = document.getElementById('excSearchInput').value.toLowerCase();
+    const sev = document.getElementById('excSeverityFilter').value;
+    const mod = document.getElementById('excModuleFilter').value;
+
+    const filtered = excList.filter(e => {
+      const matchSearch = !search || e.title.toLowerCase().includes(search) || e.description.toLowerCase().includes(search) || e.assignedTo.toLowerCase().includes(search);
+      const matchSev = sev === 'ALL' || e.severity === sev;
+      const matchMod = mod === 'ALL' || e.module === mod;
+      return matchSearch && matchSev && matchMod;
+    });
+
+    renderExceptionsTable(filtered);
+  }
+
+  function resetExcFilters() {
+    document.getElementById('excSearchInput').value = '';
+    document.getElementById('excSeverityFilter').value = 'ALL';
+    document.getElementById('excModuleFilter').value = 'ALL';
+    renderExceptionsTable(excList);
+  }
+
+  function viewExceptionDrawer(id) {
+    const e = excList.find(item => item.id === id);
+    if (!e) return;
+
+    const html = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-family: monospace; font-size: 15px; font-weight: 700; color: #0284c7;">${e.id}</span>
+            <span class="status-badge status-${e.severity.toLowerCase()}">${e.severity}</span>
+          </div>
+          <h3 style="font-size: 17px; font-weight: 800; color: #0f172a;">${e.title}</h3>
+          <p style="font-size: 13px; color: #64748b; margin-top: 2px;">Affected Subsystem: <strong>${e.module}</strong></p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px;">Telemetry Diagnostic Details</h4>
+          <p style="font-size: 13px; color: #475569; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; line-height: 1.5;">
+            ${e.description}
+          </p>
+        </div>
+
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; font-size: 13px; color: #991b1b;">
+          <strong>Operational Risk & Impact:</strong> ${e.impact}
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: #64748b;">Incident Handler:</span>
+            <strong style="color: #0f172a;">${e.assignedTo}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748b;">Resolution Status:</span>
+            <strong style="color: ${e.status === 'Resolved' ? '#059669' : '#d97706'};">${e.status}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      ${e.status !== 'Resolved' ? `
+        <button type="button" class="btn btn-success" onclick="resolveException('${e.id}')">Mark as Resolved & Mitigated</button>
+      ` : `
+        <button type="button" class="btn btn-secondary" onclick="PondApp.closeDrawer()">Close</button>
+      `}
+    `;
+
+    PondApp.openDrawer(`Exception Incident – ${e.id}`, html, footer);
+  }
+
+  function resolveException(id) {
+    const e = excList.find(item => item.id === id);
+    if (e) {
+      e.status = 'Resolved';
+      e.severity = 'Resolved';
+      PondApp.toast(`Incident #${id} marked as Resolved & Mitigated!`, 'success');
+      PondApp.closeDrawer();
+      renderExceptionsTable(excList);
+    }
+  }
+
+  function exportExceptionsCSV() {
+    const headers = ['Incident ID', 'Severity', 'Module', 'Title', 'Description', 'Assigned To', 'Timestamp', 'Status'];
+    const rows = excList.map(e => [e.id, e.severity, e.module, e.title, e.description, e.assignedTo, e.timestamp, e.status]);
+    PondApp.exportTableToCSV('PondFish_Exceptions_Log.csv', headers, rows);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderExceptionsTable(excList);
+    document.getElementById('excSearchInput').addEventListener('input', filterExceptions);
+    document.getElementById('excSeverityFilter').addEventListener('change', filterExceptions);
+    document.getElementById('excModuleFilter').addEventListener('change', filterExceptions);
+  });
+</script>
+
+</body>
+</html>
+

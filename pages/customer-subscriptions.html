@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Subscriptions – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Customer Recurring Subscriptions</h1>
+            <span class="status-badge status-optimal">383 Recurring Accounts</span>
+          </div>
+          <p class="page-subtitle">Manage customer subscription contracts, delivery pauses, automated recurring invoices, and renewals.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportCustomerSubsCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV</span>
+          </button>
+          <a href="subscription-plans.html" class="btn btn-primary">Manage Plan Tiers →</a>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Subscriptions</span>
+            <div class="kpi-icon-pill primary"><span data-icon="subscriptions"></span></div>
+          </div>
+          <div class="kpi-value">383</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 8.4%</span><span class="trend-period">Overall subscriber base</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active & Auto-Renewing</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">362</div>
+          <div class="kpi-bottom"><span class="trend-badge up">94.5%</span><span class="trend-period">Healthy recurring state</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Expiring in 7 Days</span>
+            <div class="kpi-icon-pill warning"><span data-icon="alert"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">14</div>
+          <div class="kpi-bottom"><span class="trend-badge down">Renewal Pending</span><span class="trend-period">Payment update required</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Paused / Cancelled</span>
+            <div class="kpi-icon-pill danger"><span data-icon="close"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">7</div>
+          <div class="kpi-bottom"><span class="trend-badge down">1.8% Churn</span><span class="trend-period">Under target cap</span></div>
+        </div>
+      </div>
+
+      <!-- Subscription Trajectory Chart Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Subscriber Growth & Retention Trajectory</h2>
+            <span class="card-subtitle">Monthly active subscriber additions across restaurant and retail channels</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="height: 230px; position: relative;">
+            <canvas id="subGrowthChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Subscriptions Table Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="subSearchInput" placeholder="Search customer, plan tier, subscription ID...">
+            </div>
+
+            <select class="select-filter" id="subStatusFilter">
+              <option value="ALL">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Expiring">Expiring Soon</option>
+              <option value="Paused">Paused</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetSubFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Subscription ID</th>
+                <th>Subscriber / Business</th>
+                <th>Enrolled Plan</th>
+                <th>Monthly Rate</th>
+                <th>Start Date</th>
+                <th>Next Billing Date</th>
+                <th>Next Scheduled Delivery</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="subsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let subList = [...PondData.customerSubscriptions];
+
+  function renderSubsTable(list) {
+    const tbody = document.getElementById('subsTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 32px; color: #64748b;">No subscriber records found.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(s => {
+      let badgeClass = s.status === 'Active' ? 'status-optimal' : (s.status === 'Expiring' ? 'status-warning' : (s.status === 'Paused' ? 'status-warning' : 'status-danger'));
+
+      html += `
+        <tr>
+          <td><span class="cell-primary" style="font-family: monospace;">${s.id}</span></td>
+          <td>
+            <div class="cell-primary">${s.customer}</div>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: #0284c7; font-size: 13.5px;">${s.planName}</div>
+          </td>
+          <td><strong style="color: #0f172a; font-size: 14px;">$${s.amount.toFixed(2)}</strong>/mo</td>
+          <td><span style="font-size: 12.5px; color: #64748b;">${s.startDate}</span></td>
+          <td><strong style="color: #0f172a;">${s.nextRenewal}</strong></td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600; color: #059669;">${s.nextDelivery}</div>
+          </td>
+          <td><span style="font-size: 12.5px; color: #475569;">${s.paymentMethod}</span></td>
+          <td><span class="status-badge ${badgeClass}">${s.status}</span></td>
+          <td style="text-align: right;">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn-table-action" title="View Subscriber Lifecycle" onclick="viewSubDrawer('${s.id}')">
+                ${PondIcons.get('eye')}
+              </button>
+              <button type="button" class="btn-table-action" title="Toggle Pause / Resume" onclick="togglePauseSub('${s.id}')">
+                ${PondIcons.get('refresh')}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function filterSubs() {
+    const search = document.getElementById('subSearchInput').value.toLowerCase();
+    const status = document.getElementById('subStatusFilter').value;
+
+    const filtered = subList.filter(s => {
+      const matchSearch = !search || s.id.toLowerCase().includes(search) || s.customer.toLowerCase().includes(search) || s.planName.toLowerCase().includes(search);
+      const matchStatus = status === 'ALL' || s.status === status;
+      return matchSearch && matchStatus;
+    });
+
+    renderSubsTable(filtered);
+  }
+
+  function resetSubFilters() {
+    document.getElementById('subSearchInput').value = '';
+    document.getElementById('subStatusFilter').value = 'ALL';
+    renderSubsTable(subList);
+  }
+
+  function viewSubDrawer(id) {
+    const s = subList.find(item => item.id === id);
+    if (!s) return;
+
+    const html = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-family: monospace; font-size: 15px; font-weight: 700; color: #0284c7;">${s.id}</span>
+            <span class="status-badge status-${s.status.toLowerCase()}">${s.status}</span>
+          </div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a;">${s.customer}</h3>
+          <p style="font-size: 13px; color: #64748b; margin-top: 2px;">Enrolled Plan: <strong>${s.planName}</strong></p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13.5px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Monthly Billing Rate:</span>
+            <strong style="color: #0284c7; font-size: 16px;">$${s.amount.toFixed(2)} USD</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Contract Start Date:</span>
+            <strong>${s.startDate}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Next Invoice Date:</span>
+            <strong style="color: #0f172a;">${s.nextRenewal}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Next Cold-Chain Dispatch:</span>
+            <strong style="color: #059669;">${s.nextDelivery}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748b;">Billing Rail:</span>
+            <strong>${s.paymentMethod}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button type="button" class="btn btn-secondary" onclick="togglePauseSub('${s.id}')">${s.status === 'Paused' ? 'Resume Subscription' : 'Pause Deliveries'}</button>
+      <button type="button" class="btn btn-primary" onclick="PondApp.toast('Manual invoice sent for ${s.id}', 'success')">Trigger Renewal Invoice</button>
+    `;
+
+    PondApp.openDrawer(`Subscription Profile – ${s.customer}`, html, footer);
+  }
+
+  function togglePauseSub(id) {
+    const s = subList.find(item => item.id === id);
+    if (s) {
+      if (s.status === 'Paused') {
+        s.status = 'Active';
+        PondApp.toast(`Subscription #${id} resumed successfully!`, 'success');
+      } else {
+        s.status = 'Paused';
+        PondApp.toast(`Subscription #${id} deliveries paused.`, 'info');
+      }
+      PondApp.closeDrawer();
+      renderSubsTable(subList);
+    }
+  }
+
+  function exportCustomerSubsCSV() {
+    const headers = ['ID', 'Customer', 'Plan', 'Monthly Rate ($)', 'Start Date', 'Next Renewal', 'Next Delivery', 'Payment Method', 'Status'];
+    const rows = subList.map(s => [s.id, s.customer, s.planName, s.amount, s.startDate, s.nextRenewal, s.nextDelivery, s.paymentMethod, s.status]);
+    PondApp.exportTableToCSV('PondFish_Customer_Subscriptions.csv', headers, rows);
+  }
+
+  function initSubChart() {
+    const canvas = document.getElementById('subGrowthChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: ['Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026', 'Oct 2026', 'Nov 2026'],
+        datasets: [{
+          label: 'Active Paying Subscribers',
+          data: [265, 290, 318, 342, 368, 383],
+          borderColor: '#0284c7',
+          backgroundColor: 'rgba(2, 132, 199, 0.12)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#f1f5f9' } }
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderSubsTable(subList);
+    initSubChart();
+    document.getElementById('subSearchInput').addEventListener('input', filterSubs);
+    document.getElementById('subStatusFilter').addEventListener('change', filterSubs);
+  });
+</script>
+
+</body>
+</html>
+

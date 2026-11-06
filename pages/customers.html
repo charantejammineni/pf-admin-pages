@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Directory – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Commercial & Retail Customer Directory</h1>
+            <span class="status-badge status-optimal">1,840 Active Accounts</span>
+          </div>
+          <p class="page-subtitle">Manage wholesale distributors, hotel hospitality groups, bistros, and gourmet retail subscribers.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportCustomersCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Directory</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="openAddCustomerModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add Customer</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Registered Accounts</span>
+            <div class="kpi-icon-pill primary"><span data-icon="customers"></span></div>
+          </div>
+          <div class="kpi-value">1,840</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 12.4% MoM</span><span class="trend-period">Growing commercial base</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">New Accounts This Month</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">142 Clients</div>
+          <div class="kpi-bottom"><span class="trend-badge up">+28 B2B</span><span class="trend-period">Hotels & restaurants</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">B2B Reorder Rate</span>
+            <div class="kpi-icon-pill info"><span data-icon="bookings"></span></div>
+          </div>
+          <div class="kpi-value">86.2%</div>
+          <div class="kpi-bottom"><span class="trend-badge up">High Retention</span><span class="trend-period">Weekly recurring catch</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Average Lifetime Spend</span>
+            <div class="kpi-icon-pill warning"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">$14,280</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 9.5%</span><span class="trend-period">Across commercial tiers</span></div>
+        </div>
+      </div>
+
+      <!-- Customer Growth Chart Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Commercial Client Acquisition Progression</h2>
+            <span class="card-subtitle">New customer sign-ups by segment (2026)</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="height: 220px; position: relative;">
+            <canvas id="customerGrowthChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customers Directory Table Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="custSearchInput" placeholder="Search customer, contact person, city...">
+            </div>
+
+            <select class="select-filter" id="custSegmentFilter">
+              <option value="ALL">All Segments</option>
+              <option value="Commercial B2B">Commercial B2B</option>
+              <option value="Wholesale Distributor">Wholesale Distributor</option>
+              <option value="Retail Gourmet">Retail Gourmet</option>
+            </select>
+
+            <select class="select-filter" id="custStatusFilter">
+              <option value="ALL">All Statuses</option>
+              <option value="VIP">VIP Key Accounts</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetCustFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Customer / Establishment</th>
+                <th>Primary Contact</th>
+                <th>Segment</th>
+                <th>City / Territory</th>
+                <th>Joined Date</th>
+                <th>Total Bookings</th>
+                <th>Lifetime Spend</th>
+                <th>Last Active</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="customersTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal-backdrop" id="customerModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div class="modal-title">Register New Customer Account</div>
+      <button type="button" class="modal-close-btn" onclick="PondApp.closeModal('customerModal')">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="customerForm" onsubmit="handleSaveCustomer(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Company / Account Name <span class="required">*</span></label>
+            <input type="text" class="form-control" id="custNameInput" placeholder="e.g. Four Seasons Seafood Lounge" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Primary Contact Person <span class="required">*</span></label>
+            <input type="text" class="form-control" id="custContactInput" placeholder="e.g. Executive Chef Daniel" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email Address <span class="required">*</span></label>
+            <input type="email" class="form-control" id="custEmailInput" placeholder="daniel@fourseasons.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Hotline <span class="required">*</span></label>
+            <input type="text" class="form-control" id="custPhoneInput" placeholder="+1 (555) 992-1082" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Customer Segment</label>
+            <select class="form-control" id="custSegmentInput">
+              <option value="Commercial B2B" selected>Commercial B2B (Hotel / Restaurant)</option>
+              <option value="Wholesale Distributor">Wholesale Fish Distributor</option>
+              <option value="Retail Gourmet">Retail Gourmet Residence</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">City / Territory</label>
+            <input type="text" class="form-control" id="custCityInput" placeholder="Coastal Harbor City">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Delivery Dock Address</label>
+          <input type="text" class="form-control" id="custAddressInput" placeholder="Dock 12, Pier 44, Harbor Bay Promenade">
+        </div>
+
+        <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent;">
+          <button type="button" class="btn btn-secondary" onclick="PondApp.closeModal('customerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Create Customer</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let custList = [...PondData.customers];
+
+  function renderCustomersTable(list) {
+    const tbody = document.getElementById('customersTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 32px; color: #64748b;">No customer accounts found.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(c => {
+      let badgeClass = c.status === 'VIP' ? 'status-optimal' : (c.status === 'Active' ? 'status-confirmed' : 'status-danger');
+
+      html += `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">
+                ${c.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <div class="cell-primary">${c.name}</div>
+                <div class="cell-secondary">ID: ${c.id}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: #0f172a;">${c.contactPerson}</div>
+            <div class="cell-secondary">${c.email}</div>
+          </td>
+          <td><span style="font-size: 13px; font-weight: 500; color: #475569;">${c.segment}</span></td>
+          <td><span style="font-size: 12.5px; color: #64748b;">${c.city}</span></td>
+          <td><span style="font-size: 12.5px; color: #64748b;">${c.joinedDate}</span></td>
+          <td><strong style="color: #0f172a; font-size: 14px;">${c.totalOrders}</strong> orders</td>
+          <td><strong style="color: #059669; font-size: 14.5px;">${c.totalSpent}</strong></td>
+          <td><span style="font-size: 12px; color: #475569;">${c.lastActive}</span></td>
+          <td><span class="status-badge ${badgeClass}">${c.status}</span></td>
+          <td style="text-align: right;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="viewCustomerDrawer('${c.id}')">Profile</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function filterCustomers() {
+    const search = document.getElementById('custSearchInput').value.toLowerCase();
+    const segment = document.getElementById('custSegmentFilter').value;
+    const status = document.getElementById('custStatusFilter').value;
+
+    const filtered = custList.filter(c => {
+      const matchSearch = !search || c.name.toLowerCase().includes(search) || c.contactPerson.toLowerCase().includes(search) || c.city.toLowerCase().includes(search);
+      const matchSeg = segment === 'ALL' || c.segment === segment;
+      const matchStatus = status === 'ALL' || c.status === status;
+      return matchSearch && matchSeg && matchStatus;
+    });
+
+    renderCustomersTable(filtered);
+  }
+
+  function resetCustFilters() {
+    document.getElementById('custSearchInput').value = '';
+    document.getElementById('custSegmentFilter').value = 'ALL';
+    document.getElementById('custStatusFilter').value = 'ALL';
+    renderCustomersTable(custList);
+  }
+
+  function viewCustomerDrawer(id) {
+    const c = custList.find(item => item.id === id);
+    if (!c) return;
+
+    const html = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-family: monospace; font-size: 15px; font-weight: 700; color: #0284c7;">${c.id}</span>
+            <span class="status-badge status-${c.status.toLowerCase()}">${c.status}</span>
+          </div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a;">${c.name}</h3>
+          <p style="font-size: 13px; color: #64748b; margin-top: 2px;">${c.segment} • Primary: ${c.contactPerson}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+            <span style="font-size: 11.5px; color: #64748b;">TOTAL SPENT</span>
+            <div style="font-size: 20px; font-weight: 800; color: #059669;">${c.totalSpent}</div>
+          </div>
+          <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+            <span style="font-size: 11.5px; color: #64748b;">AVERAGE ORDER</span>
+            <div style="font-size: 20px; font-weight: 800; color: #0284c7;">${c.averageOrder}</div>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">Contact Email:</span>
+            <strong>${c.email}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">Telephone:</span>
+            <strong>${c.phone}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">Delivery Address:</span>
+            <strong>${c.address}, ${c.city}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748b;">Client Since:</span>
+            <strong>${c.joinedDate}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button type="button" class="btn btn-secondary" onclick="PondApp.toast('Direct credit invoice sent to ${c.name}', 'info')">Email Invoice</button>
+      <button type="button" class="btn btn-primary" onclick="PondApp.openNewBookingModal()">+ New Booking for Client</button>
+    `;
+
+    PondApp.openDrawer(`Customer Dossier – ${c.name}`, html, footer);
+  }
+
+  function openAddCustomerModal() {
+    document.getElementById('customerForm').reset();
+    PondApp.openModal('customerModal');
+  }
+
+  function handleSaveCustomer(e) {
+    e.preventDefault();
+    const name = document.getElementById('custNameInput').value;
+    const contact = document.getElementById('custContactInput').value;
+    const email = document.getElementById('custEmailInput').value;
+    const phone = document.getElementById('custPhoneInput').value;
+    const seg = document.getElementById('custSegmentInput').value;
+    const city = document.getElementById('custCityInput').value || 'Metro';
+    const addr = document.getElementById('custAddressInput').value || 'Commercial Dock';
+
+    const newId = "CUST-" + (500 + custList.length + 1);
+    custList.unshift({
+      id: newId,
+      name: name,
+      contactPerson: contact,
+      email: email,
+      phone: phone,
+      segment: seg,
+      city: city,
+      address: addr,
+      totalOrders: 1,
+      totalSpent: "$0.00",
+      averageOrder: "$0.00",
+      joinedDate: new Date().toISOString().slice(0, 10),
+      lastActive: "Just now",
+      status: "Active"
+    });
+
+    PondApp.closeModal('customerModal');
+    renderCustomersTable(custList);
+    PondApp.toast(`Customer "${name}" registered successfully!`, 'success');
+  }
+
+  function exportCustomersCSV() {
+    const headers = ['Customer ID', 'Business Name', 'Contact Person', 'Email', 'Phone', 'Segment', 'City', 'Total Orders', 'Total Spent', 'Status'];
+    const rows = custList.map(c => [c.id, c.name, c.contactPerson, c.email, c.phone, c.segment, c.city, c.totalOrders, c.totalSpent, c.status]);
+    PondApp.exportTableToCSV('PondFish_Customer_Directory.csv', headers, rows);
+  }
+
+  function initCustomerGrowthChart() {
+    const canvas = document.getElementById('customerGrowthChart');
+    if (!canvas || typeof Chart !== 'undefined') return;
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+        datasets: [
+          {
+            label: 'Commercial B2B Clients',
+            data: [28, 34, 30, 42, 48, 56],
+            backgroundColor: '#0284c7',
+            borderRadius: 6
+          },
+          {
+            label: 'Retail Gourmet Subscribers',
+            data: [45, 52, 60, 75, 84, 96],
+            backgroundColor: '#38bdf8',
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', align: 'end' } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#f1f5f9' } }
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderCustomersTable(custList);
+    initCustomerGrowthChart();
+    document.getElementById('custSearchInput').addEventListener('input', filterCustomers);
+    document.getElementById('custSegmentFilter').addEventListener('change', filterCustomers);
+    document.getElementById('custStatusFilter').addEventListener('change', filterCustomers);
+  });
+</script>
+
+</body>
+</html>
+

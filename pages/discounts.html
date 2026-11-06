@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discounts & Promotions – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Discounts & Commercial Promotions</h1>
+            <span class="status-badge status-optimal">5 Active Campaigns</span>
+          </div>
+          <p class="page-subtitle">Configure commercial wholesale incentives, new customer sign-up bonuses, and recurring subscription discounts.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportDiscountsCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="openCreateDiscountModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Create Discount</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active Promotions</span>
+            <div class="kpi-icon-pill success"><span data-icon="discounts"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">5 Active</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Live Coupons</span><span class="trend-period">Accepting checkout codes</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Scheduled Campaigns</span>
+            <div class="kpi-icon-pill info"><span data-icon="plans"></span></div>
+          </div>
+          <div class="kpi-value">1 Campaign</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Holiday 2026</span><span class="trend-period">Starts Dec 15</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Coupon Redemptions</span>
+            <div class="kpi-icon-pill primary"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value">1,211 Uses</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 18.2%</span><span class="trend-period">Across commercial clients</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Promotional Value Granted</span>
+            <div class="kpi-icon-pill warning"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">$42,850</div>
+          <div class="kpi-bottom"><span class="trend-badge up">High ROI</span><span class="trend-period">Generated $380k in orders</span></div>
+        </div>
+      </div>
+
+      <!-- Discounts Table Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="discountSearchInput" placeholder="Search coupon code, campaign scope...">
+            </div>
+
+            <select class="select-filter" id="discountStatusFilter">
+              <option value="ALL">All Statuses</option>
+              <option value="Active">Active Only</option>
+              <option value="Expired">Expired</option>
+            </select>
+
+            <select class="select-filter" id="discountTypeFilter">
+              <option value="ALL">All Discount Types</option>
+              <option value="Percentage">Percentage (%)</option>
+              <option value="Flat Amount">Flat Amount ($)</option>
+              <option value="Recurring">Recurring Subscription</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetDiscountFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Coupon Code</th>
+                <th>Type</th>
+                <th>Discount Benefit</th>
+                <th>Target Eligibility Scope</th>
+                <th>Min Order</th>
+                <th>Validity Window</th>
+                <th>Redemptions</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="discountsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Create / Edit Discount Modal -->
+<div class="modal-backdrop" id="discountModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div class="modal-title" id="discountModalTitle">Create Promotional Discount</div>
+      <button type="button" class="modal-close-btn" onclick="PondApp.closeModal('discountModal')">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="discountForm" onsubmit="handleSaveDiscount(event)">
+        <input type="hidden" id="discountEditId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Coupon Code <span class="required">*</span></label>
+            <input type="text" class="form-control" id="discCode" placeholder="e.g. HARVEST2026" style="text-transform: uppercase; font-family: monospace; font-weight: 700;" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Discount Type <span class="required">*</span></label>
+            <select class="form-control" id="discType" required>
+              <option value="Percentage">Percentage Discount (%)</option>
+              <option value="Flat Amount">Flat Dollar Deduction ($)</option>
+              <option value="Recurring">Recurring Subscription Plan Discount</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Discount Value (e.g. 15 or 100) <span class="required">*</span></label>
+            <input type="number" class="form-control" id="discValueNum" placeholder="15" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Order Requirement ($)</label>
+            <input type="number" class="form-control" id="discMinOrder" placeholder="500">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Eligibility / Campaign Scope <span class="required">*</span></label>
+          <input type="text" class="form-control" id="discScope" placeholder="e.g. First commercial restaurant order over 100kg" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Valid From Date</label>
+            <input type="date" class="form-control" id="discValidFrom" value="2026-11-01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valid To Date</label>
+            <input type="date" class="form-control" id="discValidTo" value="2026-12-31">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Maximum Redemptions Cap</label>
+          <input type="number" class="form-control" id="discMaxUsage" value="200">
+        </div>
+
+        <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent;">
+          <button type="button" class="btn btn-secondary" onclick="PondApp.closeModal('discountModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Save Promotion</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let discountList = [...PondData.discounts];
+
+  function renderDiscountsTable(list) {
+    const tbody = document.getElementById('discountsTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 32px; color: #64748b;">No discounts found matching criteria.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(d => {
+      let badgeClass = d.status === 'Active' ? 'status-optimal' : 'status-danger';
+
+      html += `
+        <tr>
+          <td>
+            <span style="font-family: monospace; font-size: 14px; font-weight: 700; background: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em;">
+              ${d.code}
+            </span>
+          </td>
+          <td><span style="font-size: 13px; font-weight: 500; color: #475569;">${d.type}</span></td>
+          <td><strong style="color: #059669; font-size: 14px;">${d.value}</strong></td>
+          <td><span style="font-size: 13px; color: #0f172a;">${d.scope}</span></td>
+          <td><strong style="color: #475569;">$${d.minOrderAmount.toFixed(2)}</strong></td>
+          <td>
+            <div style="font-size: 12.5px; color: #64748b;">${d.validFrom} ➔ ${d.validTo}</div>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">${d.usageCount} / ${d.maxUsage}</div>
+            <div style="height: 4px; width: 80px; background: #e2e8f0; border-radius: 99px; margin-top: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${(d.usageCount / d.maxUsage * 100)}%; background: #0284c7;"></div>
+            </div>
+          </td>
+          <td><span class="status-badge ${badgeClass}">${d.status}</span></td>
+          <td style="text-align: right;">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn-table-action" title="Edit Discount" onclick="openEditDiscountModal('${d.id}')">
+                ${PondIcons.get('edit')}
+              </button>
+              <button type="button" class="btn-table-action danger" title="Archive Coupon" onclick="deleteDiscount('${d.id}')">
+                ${PondIcons.get('trash')}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function filterDiscounts() {
+    const search = document.getElementById('discountSearchInput').value.toLowerCase();
+    const status = document.getElementById('discountStatusFilter').value;
+    const type = document.getElementById('discountTypeFilter').value;
+
+    const filtered = discountList.filter(d => {
+      const matchSearch = !search || d.code.toLowerCase().includes(search) || d.scope.toLowerCase().includes(search);
+      const matchStatus = status === 'ALL' || d.status === status;
+      const matchType = type === 'ALL' || d.type === type;
+
+      return matchSearch && matchStatus && matchType;
+    });
+
+    renderDiscountsTable(filtered);
+  }
+
+  function resetDiscountFilters() {
+    document.getElementById('discountSearchInput').value = '';
+    document.getElementById('discountStatusFilter').value = 'ALL';
+    document.getElementById('discountTypeFilter').value = 'ALL';
+    renderDiscountsTable(discountList);
+  }
+
+  function openCreateDiscountModal() {
+    document.getElementById('discountModalTitle').textContent = 'Create Promotional Discount';
+    document.getElementById('discountEditId').value = '';
+    document.getElementById('discountForm').reset();
+    PondApp.openModal('discountModal');
+  }
+
+  function openEditDiscountModal(id) {
+    const d = discountList.find(item => item.id === id);
+    if (!d) return;
+
+    document.getElementById('discountModalTitle').textContent = `Edit Coupon: ${d.code}`;
+    document.getElementById('discountEditId').value = d.id;
+    document.getElementById('discCode').value = d.code;
+    document.getElementById('discType').value = d.type;
+    document.getElementById('discValueNum').value = d.numericValue;
+    document.getElementById('discMinOrder').value = d.minOrderAmount;
+    document.getElementById('discScope').value = d.scope;
+    document.getElementById('discValidFrom').value = d.validFrom;
+    document.getElementById('discValidTo').value = d.validTo;
+    document.getElementById('discMaxUsage').value = d.maxUsage;
+
+    PondApp.openModal('discountModal');
+  }
+
+  function handleSaveDiscount(e) {
+    e.preventDefault();
+    const editId = document.getElementById('discountEditId').value;
+    const code = document.getElementById('discCode').value.toUpperCase();
+    const type = document.getElementById('discType').value;
+    const num = parseFloat(document.getElementById('discValueNum').value);
+    const minOrder = parseFloat(document.getElementById('discMinOrder').value) || 0;
+    const scope = document.getElementById('discScope').value;
+    const vFrom = document.getElementById('discValidFrom').value;
+    const vTo = document.getElementById('discValidTo').value;
+    const maxUse = parseInt(document.getElementById('discMaxUsage').value) || 100;
+
+    let displayVal = `${num}% OFF`;
+    if (type === 'Flat Amount') displayVal = `$${num} OFF`;
+    else if (type === 'Recurring') displayVal = `${num}% OFF Recurring`;
+
+    if (editId) {
+      const d = discountList.find(item => item.id === editId);
+      if (d) {
+        d.code = code;
+        d.type = type;
+        d.value = displayVal;
+        d.numericValue = num;
+        d.minOrderAmount = minOrder;
+        d.scope = scope;
+        d.validFrom = vFrom;
+        d.validTo = vTo;
+        d.maxUsage = maxUse;
+        PondApp.toast(`Coupon code "${code}" updated!`, 'success');
+      }
+    } else {
+      const newId = "DISC-" + (100 + discountList.length + 1);
+      discountList.unshift({
+        id: newId,
+        code: code,
+        type: type,
+        value: displayVal,
+        numericValue: num,
+        scope: scope,
+        minOrderAmount: minOrder,
+        validFrom: vFrom,
+        validTo: vTo,
+        usageCount: 0,
+        maxUsage: maxUse,
+        status: "Active"
+      });
+      PondApp.toast(`New coupon code "${code}" launched!`, 'success');
+    }
+
+    PondApp.closeModal('discountModal');
+    renderDiscountsTable(discountList);
+  }
+
+  function deleteDiscount(id) {
+    if (confirm(`Archive coupon code #${id}?`)) {
+      discountList = discountList.filter(d => d.id !== id);
+      renderDiscountsTable(discountList);
+      PondApp.toast(`Coupon archived.`, 'info');
+    }
+  }
+
+  function exportDiscountsCSV() {
+    const headers = ['Code', 'Type', 'Value', 'Scope', 'Min Order ($)', 'Valid From', 'Valid To', 'Usage Count', 'Status'];
+    const rows = discountList.map(d => [d.code, d.type, d.value, d.scope, d.minOrderAmount, d.validFrom, d.validTo, d.usageCount, d.status]);
+    PondApp.exportTableToCSV('PondFish_Discounts.csv', headers, rows);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderDiscountsTable(discountList);
+    document.getElementById('discountSearchInput').addEventListener('input', filterDiscounts);
+    document.getElementById('discountStatusFilter').addEventListener('change', filterDiscounts);
+    document.getElementById('discountTypeFilter').addEventListener('change', filterDiscounts);
+  });
+</script>
+
+</body>
+</html>
+

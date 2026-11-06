@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fish & Aquaculture Management – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Aquaculture Fish & Shellfish Inventory</h1>
+            <span class="status-badge status-optimal">11,920 kg In Holding Ponds</span>
+          </div>
+          <p class="page-subtitle">Track pond biomass, water salinity parameters, harvest schedules, unit pricing, and safety stock levels.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportFishCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="openAddFishModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add Fish Species</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Cataloged Varieties</span>
+            <div class="kpi-icon-pill primary"><span data-icon="fish"></span></div>
+          </div>
+          <div class="kpi-value">12 Varieties</div>
+          <div class="kpi-bottom"><span class="trend-badge up">High Diversity</span><span class="trend-period">Marine & Freshwater</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active Harvest Varieties</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">9 Species</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Ready for order</span><span class="trend-period">Regular harvest slots</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Low Stock Alarms</span>
+            <div class="kpi-icon-pill warning"><span data-icon="alert"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">2 Species</div>
+          <div class="kpi-bottom"><span class="trend-badge down">Below Reserve</span><span class="trend-period">Mud Crab & Pearl Spot</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Out of Stock / Seasonal</span>
+            <div class="kpi-icon-pill danger"><span data-icon="close"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">1 Species</div>
+          <div class="kpi-bottom"><span class="trend-badge down">Seasonal Hatch</span><span class="trend-period">Silver Pompano</span></div>
+        </div>
+      </div>
+
+      <!-- Filter Bar & Table Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="fishSearchInput" placeholder="Search species name, scientific name, pond facility...">
+            </div>
+
+            <select class="select-filter" id="fishCategoryFilter">
+              <option value="ALL">All Categories</option>
+              <option value="Shellfish">Shellfish & Crustaceans</option>
+              <option value="Freshwater">Freshwater Aquaculture</option>
+              <option value="Marine">Marine & Coastal Fish</option>
+            </select>
+
+            <select class="select-filter" id="fishStatusFilter">
+              <option value="ALL">All Statuses</option>
+              <option value="Active">Active Stock</option>
+              <option value="Low Stock">Low Stock Reserve</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetFishFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Species & Scientific Name</th>
+                <th>Category</th>
+                <th>Pond Origin</th>
+                <th>Holding Stock</th>
+                <th>Unit Price</th>
+                <th>Salinity / Water</th>
+                <th>Freshness</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="fishTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-pagination-footer">
+          <div class="pagination-info" id="fishPaginationInfo">Showing 1 to 12 of 12 varieties</div>
+          <div class="pagination-controls">
+            <button class="page-btn" disabled>&laquo;</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn" disabled>&raquo;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Add / Edit Fish Species Modal -->
+<div class="modal-backdrop" id="fishModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div class="modal-title" id="fishModalTitle">Add New Fish Species</div>
+      <button type="button" class="modal-close-btn" onclick="PondApp.closeModal('fishModal')">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="fishForm" onsubmit="handleSaveFish(event)">
+        <input type="hidden" id="fishEditId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Common Species Name <span class="required">*</span></label>
+            <input type="text" class="form-control" id="fishCommonName" placeholder="e.g. Black Tiger Prawns (Jumbo)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Scientific Binomial Name <span class="required">*</span></label>
+            <input type="text" class="form-control" id="fishScientificName" placeholder="e.g. Penaeus monodon" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category <span class="required">*</span></label>
+            <select class="form-control" id="fishCategorySelect" required>
+              <option value="Shellfish & Crustaceans">Shellfish & Crustaceans</option>
+              <option value="Freshwater Aquaculture">Freshwater Aquaculture</option>
+              <option value="Marine & Coastal Fish">Marine & Coastal Fish</option>
+              <option value="Fingerlings & Seed Stock">Fingerlings & Seed Stock</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pond Origin Facility <span class="required">*</span></label>
+            <input type="text" class="form-control" id="fishPondSource" placeholder="e.g. Coastal Brackish Ponds Delta-4" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Current Holding Stock (kg) <span class="required">*</span></label>
+            <input type="number" class="form-control" id="fishStockKg" min="0" max="100000" placeholder="500" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Safety Threshold (kg) <span class="required">*</span></label>
+            <input type="number" class="form-control" id="fishMinStockKg" min="0" placeholder="200" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Commercial Unit Price ($/kg) <span class="required">*</span></label>
+            <input type="number" step="0.01" class="form-control" id="fishPrice" placeholder="22.50" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Water Salinity Norm</label>
+            <input type="text" class="form-control" id="fishSalinity" placeholder="e.g. 18 ppt">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Harvest Schedule Cadence</label>
+          <input type="text" class="form-control" id="fishHarvestSchedule" placeholder="e.g. Twice Weekly (Tuesdays / Fridays)">
+        </div>
+
+        <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent;">
+          <button type="button" class="btn btn-secondary" onclick="PondApp.closeModal('fishModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Save Fish Species</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let fishList = [...PondData.fishProducts];
+
+  function renderFishTable(list) {
+    const tbody = document.getElementById('fishTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 32px; color: #64748b;">No species match filter criteria.</td></tr>`;
+      document.getElementById('fishPaginationInfo').textContent = 'Showing 0 varieties';
+      return;
+    }
+
+    let html = '';
+    list.forEach(f => {
+      let badgeClass = 'status-optimal';
+      if (f.status === 'Low Stock') badgeClass = 'status-warning';
+      else if (f.status === 'Out of Stock') badgeClass = 'status-danger';
+
+      html += `
+        <tr>
+          <td>
+            <div class="cell-primary" style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 28px; height: 28px; border-radius: 6px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 13px;">
+                ${PondIcons.get('fish')}
+              </span>
+              <div>
+                <div style="font-weight: 700; color: #0f172a;">${f.name}</div>
+                <div style="font-size: 12px; font-style: italic; color: #64748b;">${f.scientificName} • ID: ${f.id}</div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-size: 13px; font-weight: 500; color: #475569;">${f.category}</span></td>
+          <td><span style="font-size: 12.5px; color: #64748b;">${f.pondSource}</span></td>
+          <td>
+            <div style="font-weight: 700; font-size: 14px; color: #0f172a;">${f.stockKg.toLocaleString()} kg</div>
+            <div style="font-size: 11.5px; color: ${f.stockKg <= f.minStockKg ? '#dc2626' : '#64748b'};">
+              Min Reserve: ${f.minStockKg} kg
+            </div>
+          </td>
+          <td style="font-weight: 700; color: #0284c7; font-size: 14px;">$${f.unitPrice.toFixed(2)}/kg</td>
+          <td><span style="font-size: 12.5px; color: #475569;">${f.waterSalinity}</span></td>
+          <td><strong style="color: #059669; font-size: 13px;">${f.freshnessScore}</strong></td>
+          <td><span class="status-badge ${badgeClass}">${f.status}</span></td>
+          <td style="text-align: right;">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn-table-action" title="View Species Profile" onclick="viewFishDetails('${f.id}')">
+                ${PondIcons.get('eye')}
+              </button>
+              <button type="button" class="btn-table-action" title="Edit Species Parameters" onclick="openEditFishModal('${f.id}')">
+                ${PondIcons.get('edit')}
+              </button>
+              <button type="button" class="btn-table-action" title="Quick Harvest +50kg" onclick="quickAdjustStock('${f.id}', 50)">
+                ${PondIcons.get('plus')}
+              </button>
+              <button type="button" class="btn-table-action danger" title="Deactivate Species" onclick="deleteFishSpecies('${f.id}')">
+                ${PondIcons.get('trash')}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    document.getElementById('fishPaginationInfo').textContent = `Showing 1 to ${list.length} of ${list.length} varieties`;
+  }
+
+  function filterFish() {
+    const search = document.getElementById('fishSearchInput').value.toLowerCase();
+    const cat = document.getElementById('fishCategoryFilter').value;
+    const status = document.getElementById('fishStatusFilter').value;
+
+    const filtered = fishList.filter(f => {
+      const matchSearch = !search || 
+        f.name.toLowerCase().includes(search) || 
+        f.scientificName.toLowerCase().includes(search) || 
+        f.pondSource.toLowerCase().includes(search);
+      const matchCat = cat === 'ALL' || f.category.toLowerCase().includes(cat.toLowerCase());
+      const matchStatus = status === 'ALL' || f.status === status;
+
+      return matchSearch && matchCat && matchStatus;
+    });
+
+    renderFishTable(filtered);
+  }
+
+  function resetFishFilters() {
+    document.getElementById('fishSearchInput').value = '';
+    document.getElementById('fishCategoryFilter').value = 'ALL';
+    document.getElementById('fishStatusFilter').value = 'ALL';
+    renderFishTable(fishList);
+  }
+
+  function viewFishDetails(id) {
+    const f = fishList.find(item => item.id === id);
+    if (!f) return;
+
+    const html = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-family: monospace; font-size: 15px; font-weight: 700; color: #0284c7;">${f.id}</span>
+            <span class="status-badge status-${f.status.toLowerCase().replace(' ', '-')}">${f.status}</span>
+          </div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a;">${f.name}</h3>
+          <p style="font-size: 13.5px; font-style: italic; color: #64748b;">${f.scientificName}</p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">Biomass & Commercial Economics</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+              <span style="font-size: 11.5px; color: #64748b;">IN HOLDING PONDS</span>
+              <div style="font-size: 18px; font-weight: 800; color: #0f172a;">${f.stockKg.toLocaleString()} kg</div>
+            </div>
+            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+              <span style="font-size: 11.5px; color: #64748b;">COMMERCIAL PRICE</span>
+              <div style="font-size: 18px; font-weight: 800; color: #0284c7;">$${f.unitPrice.toFixed(2)}/kg</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">Aquaculture Water Environment</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+              <span style="color: #64748b;">Pond Location:</span>
+              <strong style="color: #0f172a;">${f.pondSource}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+              <span style="color: #64748b;">Water Salinity Target:</span>
+              <strong>${f.waterSalinity}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+              <span style="color: #64748b;">Average Sizing:</span>
+              <strong>${f.avgWeightPerPiece}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #64748b;">Harvest Schedule:</span>
+              <strong style="color: #0284c7;">${f.harvestSchedule}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button type="button" class="btn btn-secondary" onclick="openEditFishModal('${f.id}')">Edit Parameters</button>
+      <button type="button" class="btn btn-primary" onclick="quickAdjustStock('${f.id}', 100)">+ Record 100kg Harvest</button>
+    `;
+
+    PondApp.openDrawer(`Species Profile – ${f.name}`, html, footer);
+  }
+
+  function quickAdjustStock(id, deltaKg) {
+    const f = fishList.find(item => item.id === id);
+    if (f) {
+      f.stockKg += deltaKg;
+      if (f.stockKg > f.minStockKg && f.status === 'Low Stock') {
+        f.status = 'Active';
+      }
+      renderFishTable(fishList);
+      PondApp.toast(`Stock for ${f.name} updated: now ${f.stockKg} kg (+${deltaKg} kg)`, 'success');
+      PondApp.closeDrawer();
+    }
+  }
+
+  function openAddFishModal() {
+    document.getElementById('fishModalTitle').textContent = 'Add New Fish Species';
+    document.getElementById('fishEditId').value = '';
+    document.getElementById('fishForm').reset();
+    PondApp.openModal('fishModal');
+  }
+
+  function openEditFishModal(id) {
+    const f = fishList.find(item => item.id === id);
+    if (!f) return;
+
+    document.getElementById('fishModalTitle').textContent = `Edit Species: ${f.name}`;
+    document.getElementById('fishEditId').value = f.id;
+    document.getElementById('fishCommonName').value = f.name;
+    document.getElementById('fishScientificName').value = f.scientificName;
+    document.getElementById('fishCategorySelect').value = f.category;
+    document.getElementById('fishPondSource').value = f.pondSource;
+    document.getElementById('fishStockKg').value = f.stockKg;
+    document.getElementById('fishMinStockKg').value = f.minStockKg;
+    document.getElementById('fishPrice').value = f.unitPrice;
+    document.getElementById('fishSalinity').value = f.waterSalinity;
+    document.getElementById('fishHarvestSchedule').value = f.harvestSchedule;
+
+    PondApp.closeDrawer();
+    PondApp.openModal('fishModal');
+  }
+
+  function handleSaveFish(e) {
+    e.preventDefault();
+    const editId = document.getElementById('fishEditId').value;
+    const name = document.getElementById('fishCommonName').value;
+    const sciName = document.getElementById('fishScientificName').value;
+    const cat = document.getElementById('fishCategorySelect').value;
+    const pond = document.getElementById('fishPondSource').value;
+    const stock = parseFloat(document.getElementById('fishStockKg').value);
+    const minStock = parseFloat(document.getElementById('fishMinStockKg').value);
+    const price = parseFloat(document.getElementById('fishPrice').value);
+    const sal = document.getElementById('fishSalinity').value || '0 ppt';
+    const sched = document.getElementById('fishHarvestSchedule').value || 'Twice Weekly';
+
+    let status = 'Active';
+    if (stock === 0) status = 'Out of Stock';
+    else if (stock <= minStock) status = 'Low Stock';
+
+    if (editId) {
+      // Update existing
+      const f = fishList.find(item => item.id === editId);
+      if (f) {
+        f.name = name;
+        f.scientificName = sciName;
+        f.category = cat;
+        f.pondSource = pond;
+        f.stockKg = stock;
+        f.minStockKg = minStock;
+        f.unitPrice = price;
+        f.waterSalinity = sal;
+        f.harvestSchedule = sched;
+        f.status = status;
+        PondApp.toast(`Species "${name}" updated successfully!`, 'success');
+      }
+    } else {
+      // Create new
+      const newId = "FISH-" + (100 + fishList.length + 1);
+      const newObj = {
+        id: newId,
+        name: name,
+        scientificName: sciName,
+        category: cat,
+        pondSource: pond,
+        stockKg: stock,
+        minStockKg: minStock,
+        unitPrice: price,
+        waterSalinity: sal,
+        avgWeightPerPiece: "Variable",
+        freshnessScore: "98/100",
+        harvestSchedule: sched,
+        status: status
+      };
+      fishList.unshift(newObj);
+      PondApp.toast(`Species "${name}" (${newId}) added to holding inventory!`, 'success');
+    }
+
+    PondApp.closeModal('fishModal');
+    renderFishTable(fishList);
+  }
+
+  function deleteFishSpecies(id) {
+    if (confirm(`Remove species #${id} from active catalog?`)) {
+      fishList = fishList.filter(item => item.id !== id);
+      renderFishTable(fishList);
+      PondApp.toast(`Species #${id} archived.`, 'info');
+    }
+  }
+
+  function exportFishCSV() {
+    const headers = ['ID', 'Common Name', 'Scientific Name', 'Category', 'Pond Origin', 'Holding Stock (kg)', 'Safety Min (kg)', 'Price ($/kg)', 'Salinity', 'Status'];
+    const rows = fishList.map(f => [f.id, f.name, f.scientificName, f.category, f.pondSource, f.stockKg, f.minStockKg, f.unitPrice, f.waterSalinity, f.status]);
+    PondApp.exportTableToCSV('PondFish_Species_Inventory.csv', headers, rows);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderFishTable(fishList);
+    document.getElementById('fishSearchInput').addEventListener('input', filterFish);
+    document.getElementById('fishCategoryFilter').addEventListener('change', filterFish);
+    document.getElementById('fishStatusFilter').addEventListener('change', filterFish);
+  });
+</script>
+
+</body>
+</html>
+

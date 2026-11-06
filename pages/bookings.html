@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookings Management – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- Shared Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Area -->
+  <main class="app-main">
+    <!-- Shared Topbar Container -->
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Bookings & Harvest Orders</h1>
+            <span class="status-badge status-active">38 Pending Dispatch</span>
+          </div>
+          <p class="page-subtitle">Track, assign reefer vehicles, and manage commercial restaurant orders and retail subscription dispatches.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportBookingsCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="PondApp.openNewBookingModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Create Booking</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Bookings</span>
+            <div class="kpi-icon-pill primary"><span data-icon="bookings"></span></div>
+          </div>
+          <div class="kpi-value">3,420</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">↑ 8.2%</span>
+            <span class="trend-period">Overall volume</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Confirmed Bookings</span>
+            <div class="kpi-icon-pill info"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value">1,840</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">↑ 12.0%</span>
+            <span class="trend-period">Scheduled for harvest</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Pending Dispatch</span>
+            <div class="kpi-icon-pill warning"><span data-icon="truck"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">38</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge down">Attention Required</span>
+            <span class="trend-period">Awaiting gate slot</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Completed & Delivered</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">1,210</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">↑ 15.4%</span>
+            <span class="trend-period">Fulfilled on time</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Cancelled Orders</span>
+            <div class="kpi-icon-pill danger"><span data-icon="close"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">125</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge down">3.6% Churn</span>
+            <span class="trend-period">Customer-initiated</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trend Chart Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Booking Inflow & Fulfillment Progression</h2>
+            <span class="card-subtitle">Daily harvest slot requests across wholesale, restaurant, and gourmet subscriptions</span>
+          </div>
+          <div class="card-actions">
+            <select class="select-filter" id="chartTimeframeSelect" style="font-size: 12px; height: 32px;">
+              <option value="weekly">Weekly View</option>
+              <option value="monthly" selected>Monthly View (2026)</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="height: 240px; position: relative;">
+            <canvas id="bookingsTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Searchable Bookings Table Card -->
+      <div class="card">
+        <!-- Table Filter Bar -->
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="bookingsSearchInput" placeholder="Search booking ID, customer, fish variety...">
+            </div>
+
+            <!-- Status Filter -->
+            <select class="select-filter" id="bookingStatusFilter">
+              <option value="ALL">All Booking Statuses</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending Dispatch</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+
+            <!-- Payment Filter -->
+            <select class="select-filter" id="paymentStatusFilter">
+              <option value="ALL">All Payment Statuses</option>
+              <option value="Paid">Paid</option>
+              <option value="Pending">Payment Pending</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+
+            <!-- Pond Filter -->
+            <select class="select-filter" id="pondFilter">
+              <option value="ALL">All Ponds</option>
+              <option value="Coastal Delta">Coastal Delta Ponds</option>
+              <option value="Krishna Basin">Krishna Basin</option>
+              <option value="Godavari Inland">Godavari Inland</option>
+              <option value="Mangrove">Mangrove Estuary</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetBookingsFilters()">Reset Filters</button>
+          </div>
+        </div>
+
+        <!-- Table Responsive -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Customer Details</th>
+                <th>Harvest Items</th>
+                <th>Pond Source</th>
+                <th>Delivery Schedule</th>
+                <th>Amount</th>
+                <th>Booking Status</th>
+                <th>Payment</th>
+                <th>Assigned Logistics</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="table-pagination-footer">
+          <div class="pagination-info" id="paginationInfo">Showing 1 to 12 of 12 entries</div>
+          <div class="pagination-controls">
+            <button class="page-btn" disabled>&laquo;</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn" disabled>&raquo;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let activeBookings = [...PondData.bookings];
+
+  function renderBookingsTable(list) {
+    const tbody = document.getElementById('bookingsTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 32px; color: #64748b;">No bookings found matching current filters.</td></tr>`;
+      document.getElementById('paginationInfo').textContent = 'Showing 0 entries';
+      return;
+    }
+
+    let html = '';
+    list.forEach(b => {
+      let badgeClass = 'status-confirmed';
+      if (b.bookingStatus === 'Completed') badgeClass = 'status-completed';
+      else if (b.bookingStatus === 'Pending') badgeClass = 'status-pending';
+      else if (b.bookingStatus === 'Cancelled') badgeClass = 'status-cancelled';
+
+      let payBadgeClass = 'status-completed';
+      if (b.paymentStatus === 'Pending') payBadgeClass = 'status-pending';
+      else if (b.paymentStatus === 'Refunded') payBadgeClass = 'status-cancelled';
+
+      html += `
+        <tr>
+          <td><span class="cell-primary" style="font-family: monospace; font-size: 13.5px;">${b.id}</span></td>
+          <td>
+            <div class="cell-primary">${b.customer}</div>
+            <div class="cell-secondary">${b.customerType} • ${b.phone}</div>
+          </td>
+          <td>
+            <div style="font-weight: 500; color: #0f172a; max-width: 240px; font-size: 13px;">${b.items}</div>
+          </td>
+          <td><span style="font-size: 12.5px; color: #475569;">${b.pondSource}</span></td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600; color: #0f172a;">${b.deliveryDate}</div>
+            <div class="cell-secondary">Ordered: ${b.bookingDate}</div>
+          </td>
+          <td>
+            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">$${b.amount.toFixed(2)}</div>
+          </td>
+          <td><span class="status-badge ${badgeClass}">${b.bookingStatus}</span></td>
+          <td><span class="status-badge ${payBadgeClass}">${b.paymentStatus}</span></td>
+          <td>
+            <div style="font-size: 12.5px; font-weight: 600; color: #0284c7;">${b.assignedTruck.split('(')[0]}</div>
+            <div class="cell-secondary">${b.assignedWorker}</div>
+          </td>
+          <td style="text-align: right;">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn-table-action" title="View Order Details" onclick="viewBookingDrawer('${b.id}')">
+                ${PondIcons.get('eye')}
+              </button>
+              <button type="button" class="btn-table-action" title="Print Gate Pass" onclick="PondApp.toast('Gate Pass PDF generated for ${b.id}', 'info')">
+                ${PondIcons.get('download')}
+              </button>
+              <button type="button" class="btn-table-action danger" title="Cancel Booking" onclick="cancelBooking('${b.id}')">
+                ${PondIcons.get('close')}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    document.getElementById('paginationInfo').textContent = `Showing 1 to ${list.length} of ${list.length} entries`;
+  }
+
+  function filterBookings() {
+    const search = document.getElementById('bookingsSearchInput').value.toLowerCase();
+    const status = document.getElementById('bookingStatusFilter').value;
+    const payment = document.getElementById('paymentStatusFilter').value;
+    const pond = document.getElementById('pondFilter').value;
+
+    const filtered = PondData.bookings.filter(b => {
+      const matchSearch = !search || 
+        b.id.toLowerCase().includes(search) || 
+        b.customer.toLowerCase().includes(search) || 
+        b.items.toLowerCase().includes(search);
+      const matchStatus = status === 'ALL' || b.bookingStatus === status;
+      const matchPay = payment === 'ALL' || b.paymentStatus === payment;
+      const matchPond = pond === 'ALL' || b.pondSource.toLowerCase().includes(pond.toLowerCase());
+
+      return matchSearch && matchStatus && matchPay && matchPond;
+    });
+
+    renderBookingsTable(filtered);
+  }
+
+  function resetBookingsFilters() {
+    document.getElementById('bookingsSearchInput').value = '';
+    document.getElementById('bookingStatusFilter').value = 'ALL';
+    document.getElementById('paymentStatusFilter').value = 'ALL';
+    document.getElementById('pondFilter').value = 'ALL';
+    renderBookingsTable(PondData.bookings);
+    PondApp.toast('Booking filters reset', 'info');
+  }
+
+  function viewBookingDrawer(id) {
+    const b = PondData.bookings.find(item => item.id === id);
+    if (!b) return;
+
+    const bodyHtml = `
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-family: monospace; font-size: 16px; font-weight: 700; color: #0284c7;">${b.id}</span>
+            <span class="status-badge status-${b.bookingStatus.toLowerCase()}">${b.bookingStatus}</span>
+          </div>
+          <h3 style="font-size: 17px; font-weight: 700; color: #0f172a;">${b.customer}</h3>
+          <p style="font-size: 13px; color: #64748b; margin-top: 2px;">${b.customerType} • ${b.contact} • ${b.phone}</p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">Harvest & Order Details</h4>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;">
+              <span style="color: #64748b;">Ordered Varieties:</span>
+              <strong style="color: #0f172a; text-align: right;">${b.items}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+              <span style="color: #64748b;">Total Value:</span>
+              <strong style="color: #0284c7; font-size: 15px;">$${b.amount.toFixed(2)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 8px;">
+              <span style="color: #64748b;">Payment Status:</span>
+              <span class="status-badge status-${b.paymentStatus.toLowerCase()}">${b.paymentStatus}</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">Cold-Chain Fleet Logistics</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px;">
+              <div style="color: #64748b; font-size: 11.5px;">ORIGIN POND</div>
+              <div style="font-weight: 600; color: #0f172a; margin-top: 2px;">${b.pondSource}</div>
+            </div>
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px;">
+              <div style="color: #64748b; font-size: 11.5px;">DELIVERY WINDOW</div>
+              <div style="font-weight: 600; color: #0f172a; margin-top: 2px;">${b.deliveryDate}</div>
+            </div>
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px;">
+              <div style="color: #64748b; font-size: 11.5px;">REEFER TRUCK</div>
+              <div style="font-weight: 600; color: #0284c7; margin-top: 2px;">${b.assignedTruck}</div>
+            </div>
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px;">
+              <div style="color: #64748b; font-size: 11.5px;">DRIVER IN CHARGE</div>
+              <div style="font-weight: 600; color: #0f172a; margin-top: 2px;">${b.assignedWorker}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px;">Handling Instructions</h4>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; font-size: 13px; color: #92400e;">
+            ${b.notes}
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footerHtml = `
+      <button type="button" class="btn btn-secondary" onclick="PondApp.toast('Dispatch gate pass sent to printer', 'info')">Print Gate Pass</button>
+      <button type="button" class="btn btn-success" onclick="markBookingDelivered('${b.id}')">Mark as Completed</button>
+    `;
+
+    PondApp.openDrawer(`Booking Details - ${b.id}`, bodyHtml, footerHtml);
+  }
+
+  function markBookingDelivered(id) {
+    const b = PondData.bookings.find(item => item.id === id);
+    if (b) {
+      b.bookingStatus = 'Completed';
+      b.paymentStatus = 'Paid';
+      PondApp.toast(`Booking #${id} updated to Completed!`, 'success');
+      PondApp.closeDrawer();
+      renderBookingsTable(PondData.bookings);
+    }
+  }
+
+  function cancelBooking(id) {
+    if (confirm(`Are you sure you want to cancel booking #${id}?`)) {
+      const b = PondData.bookings.find(item => item.id === id);
+      if (b) {
+        b.bookingStatus = 'Cancelled';
+        b.paymentStatus = 'Refunded';
+        PondApp.toast(`Booking #${id} cancelled and marked as refunded.`, 'error');
+        renderBookingsTable(PondData.bookings);
+      }
+    }
+  }
+
+  function exportBookingsCSV() {
+    const headers = ['Booking ID', 'Customer', 'Customer Type', 'Items', 'Pond Source', 'Delivery Date', 'Amount', 'Booking Status', 'Payment Status', 'Assigned Truck'];
+    const rows = PondData.bookings.map(b => [b.id, b.customer, b.customerType, b.items, b.pondSource, b.deliveryDate, b.amount, b.bookingStatus, b.paymentStatus, b.assignedTruck]);
+    PondApp.exportTableToCSV('PondFish_Bookings_Registry.csv', headers, rows);
+  }
+
+  function initBookingsTrendChart() {
+    const canvas = document.getElementById('bookingsTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov (Proj)', 'Dec (Proj)'],
+        datasets: [
+          {
+            label: 'Confirmed Bookings',
+            data: [190, 220, 240, 275, 260, 310, 340, 325, 360, 395, 420, 450],
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2.5
+          },
+          {
+            label: 'Fulfilled / Completed',
+            data: [175, 205, 230, 260, 245, 295, 320, 310, 345, 380, 400, 430],
+            borderColor: '#10b981',
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', align: 'end' }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#f1f5f9' } }
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderBookingsTable(PondData.bookings);
+    initBookingsTrendChart();
+
+    document.getElementById('bookingsSearchInput').addEventListener('input', filterBookings);
+    document.getElementById('bookingStatusFilter').addEventListener('change', filterBookings);
+    document.getElementById('paymentStatusFilter').addEventListener('change', filterBookings);
+    document.getElementById('pondFilter').addEventListener('change', filterBookings);
+  });
+</script>
+
+</body>
+</html>
+

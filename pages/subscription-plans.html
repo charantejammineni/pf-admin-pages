@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Plans – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Recurring Subscription Plans & Tiers</h1>
+            <span class="status-badge status-optimal">$149,280 Monthly Recurring Revenue (MRR)</span>
+          </div>
+          <p class="page-subtitle">Manage structured recurring catch delivery tiers for commercial restaurants, gourmet residences, and aquaculture farm fleets.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <a href="customer-subscriptions.html" class="btn btn-secondary">View Subscribers →</a>
+          <button type="button" class="btn btn-primary" onclick="openAddPlanModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Create New Plan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active Recurring MRR</span>
+            <div class="kpi-icon-pill primary"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value">$149,280</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 16.5% MoM</span><span class="trend-period">Predictable revenue</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Active Subscribers</span>
+            <div class="kpi-icon-pill success"><span data-icon="plans"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">383 Accounts</div>
+          <div class="kpi-bottom"><span class="trend-badge up">94% Retention</span><span class="trend-period">Across 4 tiers</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Average Contract Tenure</span>
+            <div class="kpi-icon-pill info"><span data-icon="audit"></span></div>
+          </div>
+          <div class="kpi-value">14.2 Mos</div>
+          <div class="kpi-bottom"><span class="trend-badge up">High Loyalty</span><span class="trend-period">Commercial B2B core</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Monthly Churn Rate</span>
+            <div class="kpi-icon-pill warning"><span data-icon="exceptions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">1.8%</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Industry Benchmark</span><span class="trend-period">Below 2.5% target</span></div>
+        </div>
+      </div>
+
+      <!-- Plan Cards Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;" id="planCardsGrid">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Plan Comparison & Economics Table Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Subscription Tier Performance Matrix</h2>
+            <span class="card-subtitle">Detailed breakdown of subscriber base and fulfillment obligations</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Plan Name & Tier</th>
+                <th>Price & Billing Cycle</th>
+                <th>Deliveries / Mo</th>
+                <th>Active Subscribers</th>
+                <th>MRR Contribution</th>
+                <th>Fulfillment Fleet Allocation</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="plansTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Add / Edit Plan Modal -->
+<div class="modal-backdrop" id="planModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div class="modal-title" id="planModalTitle">Create Subscription Plan</div>
+      <button type="button" class="modal-close-btn" onclick="PondApp.closeModal('planModal')">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="planForm" onsubmit="handleSavePlan(event)">
+        <input type="hidden" id="planEditId">
+
+        <div class="form-group">
+          <label class="form-label">Plan Display Name <span class="required">*</span></label>
+          <input type="text" class="form-control" id="pName" placeholder="e.g. Bi-Weekly Premium Seafood Box" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Target Tier Classification <span class="required">*</span></label>
+            <input type="text" class="form-control" id="pTier" placeholder="e.g. Commercial Tier 1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subscription Price ($) <span class="required">*</span></label>
+            <input type="number" step="0.01" class="form-control" id="pPrice" placeholder="320.00" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Billing Cycle Cadence</label>
+            <input type="text" class="form-control" id="pCycle" placeholder="Weekly / Billed Monthly">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deliveries per Month</label>
+            <input type="number" class="form-control" id="pDeliveries" value="4">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Plan Features (One per line) <span class="required">*</span></label>
+          <textarea class="form-control" id="pFeatures" rows="4" placeholder="Up to 25kg curated fresh fish weekly&#10;Priority 05:30 AM kitchen delivery slot&#10;Dedicated cold-chain reefer routing" required></textarea>
+        </div>
+
+        <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent;">
+          <button type="button" class="btn btn-secondary" onclick="PondApp.closeModal('planModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Save Subscription Plan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let plansList = [...PondData.subscriptionPlans];
+
+  function renderPlanCards() {
+    const grid = document.getElementById('planCardsGrid');
+    if (!grid) return;
+
+    let html = '';
+    plansList.forEach(p => {
+      let featuresList = p.features.map(f => `
+        <li style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #475569; margin-bottom: 8px;">
+          <span style="color: #10b981; font-weight: 800; font-size: 14px; flex-shrink: 0;">✓</span>
+          <span>${f}</span>
+        </li>
+      `).join('');
+
+      html += `
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+          <div class="card-header" style="background: #fafbfc;">
+            <div>
+              <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.05em;">${p.tier}</span>
+              <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 2px;">${p.name}</h3>
+            </div>
+            <span class="status-badge status-optimal">${p.status}</span>
+          </div>
+
+          <div class="card-body" style="flex: 1; display: flex; flex-direction: column;">
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 32px; font-weight: 800; color: #0f172a; line-height: 1;">
+                $${p.price.toFixed(2)}
+                <span style="font-size: 13px; font-weight: 500; color: #64748b;">${p.period}</span>
+              </div>
+              <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Cycle: ${p.billingCycle} • ${p.deliveriesPerMonth} deliveries/mo</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px;">
+              <div>
+                <span style="font-size: 11.5px; color: #64748b;">SUBSCRIBERS</span>
+                <div style="font-size: 18px; font-weight: 800; color: #0284c7;">${p.activeSubscribers}</div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 11.5px; color: #64748b;">MONTHLY REVENUE</span>
+                <div style="font-size: 18px; font-weight: 800; color: #059669;">${p.monthlyRevenue}</div>
+              </div>
+            </div>
+
+            <ul style="list-style: none; margin-bottom: 20px; flex: 1;">
+              ${featuresList}
+            </ul>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-sm btn-secondary" style="flex: 1;" onclick="openEditPlanModal('${p.id}')">Edit Plan</button>
+              <a href="customer-subscriptions.html" class="btn btn-sm btn-primary" style="flex: 1;">View Subscribers</a>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+  }
+
+  function renderPlansTable() {
+    const tbody = document.getElementById('plansTableBody');
+    if (!tbody) return;
+
+    let html = '';
+    plansList.forEach(p => {
+      html += `
+        <tr>
+          <td>
+            <div class="cell-primary">${p.name}</div>
+            <div class="cell-secondary">${p.tier} • ID: ${p.id}</div>
+          </td>
+          <td>
+            <strong style="color: #0f172a; font-size: 14px;">$${p.price.toFixed(2)}</strong>
+            <div class="cell-secondary">${p.billingCycle}</div>
+          </td>
+          <td><strong style="color: #475569;">${p.deliveriesPerMonth}</strong> scheduled slots</td>
+          <td><strong style="color: #0284c7; font-size: 15px;">${p.activeSubscribers}</strong> active clients</td>
+          <td><strong style="color: #059669; font-size: 15px;">${p.monthlyRevenue}</strong></td>
+          <td><span style="font-size: 12.5px; color: #475569;">Reefer Express / 8-Ton Fleet</span></td>
+          <td><span class="status-badge status-optimal">${p.status}</span></td>
+          <td style="text-align: right;">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn-table-action" title="Edit Plan" onclick="openEditPlanModal('${p.id}')">
+                ${PondIcons.get('edit')}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function openAddPlanModal() {
+    document.getElementById('planModalTitle').textContent = 'Create Subscription Plan';
+    document.getElementById('planEditId').value = '';
+    document.getElementById('planForm').reset();
+    PondApp.openModal('planModal');
+  }
+
+  function openEditPlanModal(id) {
+    const p = plansList.find(item => item.id === id);
+    if (!p) return;
+
+    document.getElementById('planModalTitle').textContent = `Edit Plan: ${p.name}`;
+    document.getElementById('planEditId').value = p.id;
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pTier').value = p.tier;
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pCycle').value = p.billingCycle;
+    document.getElementById('pDeliveries').value = p.deliveriesPerMonth;
+    document.getElementById('pFeatures').value = p.features.join('\n');
+
+    PondApp.openModal('planModal');
+  }
+
+  function handleSavePlan(e) {
+    e.preventDefault();
+    const editId = document.getElementById('planEditId').value;
+    const name = document.getElementById('pName').value;
+    const tier = document.getElementById('pTier').value;
+    const price = parseFloat(document.getElementById('pPrice').value);
+    const cycle = document.getElementById('pCycle').value || 'Monthly';
+    const deliveries = parseInt(document.getElementById('pDeliveries').value) || 4;
+    const features = document.getElementById('pFeatures').value.split('\n').filter(f => f.trim().length > 0);
+
+    if (editId) {
+      const p = plansList.find(item => item.id === editId);
+      if (p) {
+        p.name = name;
+        p.tier = tier;
+        p.price = price;
+        p.billingCycle = cycle;
+        p.deliveriesPerMonth = deliveries;
+        p.features = features;
+        p.monthlyRevenue = '$' + (price * p.activeSubscribers).toLocaleString();
+        PondApp.toast(`Plan "${name}" updated!`, 'success');
+      }
+    } else {
+      const newId = "PLAN-0" + (plansList.length + 1);
+      plansList.push({
+        id: newId,
+        name: name,
+        tier: tier,
+        billingCycle: cycle,
+        price: price,
+        period: "per month",
+        deliveriesPerMonth: deliveries,
+        features: features,
+        activeSubscribers: 0,
+        monthlyRevenue: "$0",
+        status: "Active"
+      });
+      PondApp.toast(`New plan "${name}" launched!`, 'success');
+    }
+
+    PondApp.closeModal('planModal');
+    renderPlanCards();
+    renderPlansTable();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderPlanCards();
+    renderPlansTable();
+  });
+</script>
+
+</body>
+</html>
+

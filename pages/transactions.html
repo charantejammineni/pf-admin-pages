@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financial Transactions – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Financial Transactions & Settlements</h1>
+            <span class="status-badge status-optimal">Stripe & ACH Escrow Live</span>
+          </div>
+          <p class="page-subtitle">Inspect automated payments, corporate wire transfers, net settlements, and reconciliation ledgers.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportTransactionsCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Ledgers</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="PondApp.toast('Automated daily settlement payout triggered to Chase Commercial Account', 'success')">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Trigger Payout Batch</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Gross Transaction Volume</span>
+            <div class="kpi-icon-pill primary"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value">$482,950</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">↑ 14.8%</span>
+            <span class="trend-period">Current calendar month</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Successful Settlements</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">3,640</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">94.2% Rate</span>
+            <span class="trend-period">Cleared in escrow</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Pending Settlements</span>
+            <div class="kpi-icon-pill warning"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">$18,450</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge down">310 Txns</span>
+            <span class="trend-period">ACH verification window</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Failed / Refunded</span>
+            <div class="kpi-icon-pill danger"><span data-icon="close"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">$4,120</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge down">165 Txns</span>
+            <span class="trend-period">Customer cancelled</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="dashboard-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Daily Payment Settlement Velocity</h2>
+              <span class="card-subtitle">Volume cleared through automated payment rails</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="height: 250px; position: relative;">
+              <canvas id="txnVolumeChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Payment Method Mix</h2>
+              <span class="card-subtitle">Channel distribution by transaction count</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="height: 250px; position: relative;">
+              <canvas id="txnMethodChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions Table -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="txnSearchInput" placeholder="Search txn ID, reference, customer name...">
+            </div>
+
+            <select class="select-filter" id="txnStatusFilter">
+              <option value="ALL">All Statuses</option>
+              <option value="Successful">Successful</option>
+              <option value="Pending">Pending ACH</option>
+              <option value="Failed">Failed / Refunded</option>
+            </select>
+
+            <select class="select-filter" id="txnMethodFilter">
+              <option value="ALL">All Payment Methods</option>
+              <option value="Net Banking">Corporate Net Banking</option>
+              <option value="Wire">Wire Transfer (ACH)</option>
+              <option value="Stripe">Stripe Card</option>
+              <option value="Apple Pay">Apple Pay</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetTxnFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Booking Ref</th>
+                <th>Customer Name</th>
+                <th>Settlement Date</th>
+                <th>Payment Method</th>
+                <th>Gross Amount</th>
+                <th>Gateway Fee</th>
+                <th>Net Settled</th>
+                <th>Status</th>
+                <th>Gateway Reference ID</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="txnTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-pagination-footer">
+          <div class="pagination-info" id="txnPaginationInfo">Showing 1 to 12 of 12 records</div>
+          <div class="pagination-controls">
+            <button class="page-btn" disabled>&laquo;</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn" disabled>&raquo;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  function renderTxnTable(list) {
+    const tbody = document.getElementById('txnTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 32px; color: #64748b;">No transactions match filter criteria.</td></tr>`;
+      document.getElementById('txnPaginationInfo').textContent = 'Showing 0 records';
+      return;
+    }
+
+    let html = '';
+    list.forEach(t => {
+      let badgeClass = 'status-successful';
+      if (t.status === 'Pending') badgeClass = 'status-pending';
+      else if (t.status === 'Failed') badgeClass = 'status-failed';
+
+      html += `
+        <tr>
+          <td><span class="cell-primary" style="font-family: monospace;">${t.id}</span></td>
+          <td><span style="font-family: monospace; color: #0284c7; font-weight: 600;">${t.bookingId}</span></td>
+          <td>
+            <div class="cell-primary">${t.customer}</div>
+          </td>
+          <td><span style="font-size: 12.5px; color: #475569;">${t.date}</span></td>
+          <td>
+            <span style="font-size: 13px; font-weight: 500; color: #0f172a;">${t.method}</span>
+          </td>
+          <td style="font-weight: 700; color: #0f172a;">$${t.amount.toFixed(2)}</td>
+          <td style="font-size: 12.5px; color: #64748b;">-$${t.fee.toFixed(2)}</td>
+          <td style="font-weight: 700; color: #059669;">$${t.netAmount.toFixed(2)}</td>
+          <td><span class="status-badge ${badgeClass}">${t.status}</span></td>
+          <td><span style="font-family: monospace; font-size: 11.5px; color: #64748b;">${t.referenceId}</span></td>
+          <td style="text-align: right;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="viewTxnDetails('${t.id}')">Receipt</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    document.getElementById('txnPaginationInfo').textContent = `Showing 1 to ${list.length} of ${list.length} records`;
+  }
+
+  function filterTxns() {
+    const search = document.getElementById('txnSearchInput').value.toLowerCase();
+    const status = document.getElementById('txnStatusFilter').value;
+    const method = document.getElementById('txnMethodFilter').value;
+
+    const filtered = PondData.transactions.filter(t => {
+      const matchSearch = !search || 
+        t.id.toLowerCase().includes(search) || 
+        t.customer.toLowerCase().includes(search) || 
+        t.referenceId.toLowerCase().includes(search);
+      const matchStatus = status === 'ALL' || t.status === status;
+      const matchMethod = method === 'ALL' || t.method.toLowerCase().includes(method.toLowerCase());
+
+      return matchSearch && matchStatus && matchMethod;
+    });
+
+    renderTxnTable(filtered);
+  }
+
+  function resetTxnFilters() {
+    document.getElementById('txnSearchInput').value = '';
+    document.getElementById('txnStatusFilter').value = 'ALL';
+    document.getElementById('txnMethodFilter').value = 'ALL';
+    renderTxnTable(PondData.transactions);
+  }
+
+  function viewTxnDetails(id) {
+    const t = PondData.transactions.find(item => item.id === id);
+    if (!t) return;
+
+    const html = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <div style="font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Total Amount Cleared</div>
+          <div style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 4px 0;">$${t.amount.toFixed(2)} <span style="font-size: 16px; font-weight: 600; color: #64748b;">USD</span></div>
+          <span class="status-badge status-${t.status.toLowerCase()}">${t.status}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13.5px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Transaction Reference:</span>
+            <strong style="font-family: monospace;">${t.id}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Linked Booking:</span>
+            <strong style="font-family: monospace; color: #0284c7;">${t.bookingId}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Customer Account:</span>
+            <strong>${t.customer}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Payment Method:</span>
+            <strong>${t.method}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Gateway Clearance ID:</span>
+            <span style="font-family: monospace; font-size: 12px;">${t.referenceId}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+            <span style="color: #64748b;">Interchange Fee:</span>
+            <span style="color: #ef4444;">-$${t.fee.toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 4px; font-size: 15px;">
+            <span style="font-weight: 700; color: #0f172a;">Net Payout Deposited:</span>
+            <span style="font-weight: 800; color: #059669;">$${t.netAmount.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button type="button" class="btn btn-secondary" onclick="PondApp.toast('Official tax receipt PDF downloaded', 'success')">Download Tax PDF</button>
+      <button type="button" class="btn btn-primary" onclick="PondApp.closeDrawer()">Done</button>
+    `;
+
+    PondApp.openDrawer(`Transaction Receipt – ${t.id}`, html, footer);
+  }
+
+  function exportTransactionsCSV() {
+    const headers = ['Txn ID', 'Booking ID', 'Customer', 'Date', 'Method', 'Gross', 'Fee', 'Net', 'Status', 'Ref ID'];
+    const rows = PondData.transactions.map(t => [t.id, t.bookingId, t.customer, t.date, t.method, t.amount, t.fee, t.netAmount, t.status, t.referenceId]);
+    PondApp.exportTableToCSV('PondFish_Transactions_Settlements.csv', headers, rows);
+  }
+
+  function initTxnCharts() {
+    // 1. Volume Chart
+    const vCtx = document.getElementById('txnVolumeChart');
+    if (vCtx && typeof Chart !== 'undefined') {
+      new Chart(vCtx, {
+        type: 'line',
+        data: {
+          labels: ['Day 1', 'Day 5', 'Day 10', 'Day 15', 'Day 20', 'Day 25', 'Day 30'],
+          datasets: [{
+            label: 'Settled Daily ($)',
+            data: [14200, 18500, 16400, 22100, 19800, 24500, 28900],
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#f1f5f9' } }
+          }
+        }
+      });
+    }
+
+    // 2. Method Mix Chart
+    const mCtx = document.getElementById('txnMethodChart');
+    if (mCtx && typeof Chart !== 'undefined') {
+      new Chart(mCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Corporate Wire (ACH)', 'Stripe Card', 'Net Banking', 'Apple Pay / Digital'],
+          datasets: [{
+            data: [42, 30, 20, 8],
+            backgroundColor: ['#0284c7', '#38bdf8', '#10b981', '#f59e0b'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderTxnTable(PondData.transactions);
+    initTxnCharts();
+    document.getElementById('txnSearchInput').addEventListener('input', filterTxns);
+    document.getElementById('txnStatusFilter').addEventListener('change', filterTxns);
+    document.getElementById('txnMethodFilter').addEventListener('change', filterTxns);
+  });
+</script>
+
+</body>
+</html>
+

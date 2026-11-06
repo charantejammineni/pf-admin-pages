@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPS Truck Journey & Cold-Chain Logistics – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    /* GPS Map Layout Styles */
+    .gps-hud-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .gps-hud-stat-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .gps-hud-stat-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .telemetry-gauge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .telemetry-gauge.optimal {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .telemetry-gauge.warning {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">GPS Truck Fleet & Cold-Chain Telemetry</h1>
+            <span class="status-badge status-optimal">6 Vehicles Monitored</span>
+          </div>
+          <p class="page-subtitle">Real-time GPS vehicle tracking, reefer temperature compliance (-2°C baseline), and pond-to-table delivery dispatch.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="simulatePingAll()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span>Ping Telemetry Sensors</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="PondApp.openNewBookingModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Dispatch New Journey</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active Journeys In-Transit</span>
+            <div class="kpi-icon-pill primary"><span data-icon="truck"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #0284c7;">2 Trucks</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">Optimal Speed</span>
+            <span class="trend-period">PF-104 & PF-108</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Delayed / Temp Alert</span>
+            <div class="kpi-icon-pill danger"><span data-icon="exceptions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">1 Truck</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge down">Alert: -0.5°C</span>
+            <span class="trend-period">Truck #PF-112 Bypass Traffic</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Completed Deliveries Today</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">2 Journeys</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">100% Intact</span>
+            <span class="trend-period">2,100 kg delivered</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Scheduled Tomorrow</span>
+            <div class="kpi-icon-pill info"><span data-icon="truck"></span></div>
+          </div>
+          <div class="kpi-value">1 Vehicle</div>
+          <div class="kpi-bottom">
+            <span class="trend-badge up">Pre-Cooled</span>
+            <span class="trend-period">Starts 05:00 AM CST</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPS Interactive Vector Map Simulation Card -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Live Aquaculture Transport Corridor</h2>
+            <span class="card-subtitle">Real-time highway coordinates, reefer temperature gradients, and transit waypoints</span>
+          </div>
+          <div class="card-actions">
+            <span class="status-badge status-optimal">Satellite GPS Fixed</span>
+            <span class="status-badge status-active">RF Telemetry 433MHz</span>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="logistics-map-canvas-container" id="mapCanvasContainer">
+            <!-- Grid overlay -->
+            <div class="map-grid-overlay"></div>
+
+            <!-- Vector Map Highway Road Paths (styled SVG) -->
+            <svg style="position: absolute; inset: 0; width: 100%; height: 100%;" viewBox="0 0 1000 480" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="routeGradActive" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0284c7" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.9"/>
+                </linearGradient>
+                <linearGradient id="routeGradDelayed" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.8"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Main Coastal Highway 16 -->
+              <path d="M 80,400 Q 280,260 520,240 T 900,100" fill="none" stroke="#1e3a5f" stroke-width="8" stroke-linecap="round"/>
+              <path d="M 80,400 Q 280,260 520,240 T 900,100" fill="none" stroke="url(#routeGradActive)" stroke-width="3" stroke-dasharray="8 6"/>
+
+              <!-- Godavari Connector Highway 2 -->
+              <path d="M 120,80 Q 360,140 520,240 T 780,420" fill="none" stroke="#1e3a5f" stroke-width="6" stroke-linecap="round"/>
+              <path d="M 120,80 Q 360,140 520,240 T 780,420" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-dasharray="6 4"/>
+
+              <!-- River Bypass Route (Delayed truck) -->
+              <path d="M 400,380 Q 560,340 700,260 T 900,100" fill="none" stroke="url(#routeGradDelayed)" stroke-width="3" stroke-dasharray="5 5"/>
+
+              <!-- Node: Coastal Delta Ponds -->
+              <circle cx="80" cy="400" r="14" fill="#0369a1" stroke="#38bdf8" stroke-width="3"/>
+              <text x="75" y="435" fill="#94a3b8" font-size="12" font-weight="600" text-anchor="middle">Coastal Delta Ponds</text>
+
+              <!-- Node: Godavari Hatchery -->
+              <circle cx="120" cy="80" r="14" fill="#0369a1" stroke="#38bdf8" stroke-width="3"/>
+              <text x="120" y="60" fill="#94a3b8" font-size="12" font-weight="600" text-anchor="middle">Godavari Hatchery</text>
+
+              <!-- Node: Central Junction Hub -->
+              <circle cx="520" cy="240" r="12" fill="#0f172a" stroke="#64748b" stroke-width="2.5"/>
+              <text x="520" y="270" fill="#cbd5e1" font-size="11" font-weight="600" text-anchor="middle">Mid-Route Junction</text>
+
+              <!-- Node: Metro Cold Storage Hub -->
+              <circle cx="900" cy="100" r="16" fill="#10b981" stroke="#ffffff" stroke-width="3.5"/>
+              <text x="900" y="135" fill="#34d399" font-size="13" font-weight="700" text-anchor="middle">Metro Cold Hub (Dest)</text>
+            </svg>
+
+            <!-- TRUCK 1: PF-104 (Optimal In-Transit) -->
+            <div class="map-truck-marker" style="top: 52%; left: 58%;" onclick="selectTruckJourney('TRK-104')">
+              <div class="truck-pulse-ring" style="background-color: rgba(2, 132, 199, 0.4);"></div>
+              <div class="truck-pin-body" style="background-color: #0284c7;">
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: none; stroke: #ffffff; stroke-width: 2.2;"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
+              <div class="truck-popup-card">
+                <div style="font-weight: 700; color: #38bdf8; font-size: 13px;">Truck #PF-104 (Volvo FL)</div>
+                <div style="color: #cbd5e1; margin-top: 2px;">Driver: Vikramaditya Roy</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                  <span>Reefer Temp:</span>
+                  <strong style="color: #34d399;">-2.4°C (Optimal)</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Speed:</span>
+                  <span>58 km/h • ETA: 42m</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TRUCK 2: PF-108 (Optimal In-Transit) -->
+            <div class="map-truck-marker" style="top: 36%; left: 38%;" onclick="selectTruckJourney('TRK-108')">
+              <div class="truck-pulse-ring" style="background-color: rgba(6, 182, 212, 0.4);"></div>
+              <div class="truck-pin-body" style="background-color: #06b6d4;">
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: none; stroke: #ffffff; stroke-width: 2.2;"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
+              <div class="truck-popup-card">
+                <div style="font-weight: 700; color: #38bdf8; font-size: 13px;">Truck #PF-108 (Isuzu 14ft)</div>
+                <div style="color: #cbd5e1; margin-top: 2px;">Driver: Devendra Rao</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                  <span>Reefer Temp:</span>
+                  <strong style="color: #34d399;">-1.8°C (Optimal)</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Speed:</span>
+                  <span>46 km/h • ETA: 1h 15m</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TRUCK 3: PF-112 (Delayed Temp Alert) -->
+            <div class="map-truck-marker" style="top: 64%; left: 68%;" onclick="selectTruckJourney('TRK-112')">
+              <div class="truck-pulse-ring" style="background-color: rgba(239, 68, 68, 0.5);"></div>
+              <div class="truck-pin-body" style="background-color: #ef4444;">
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: none; stroke: #ffffff; stroke-width: 2.2;"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
+              <div class="truck-popup-card" style="border-color: #ef4444;">
+                <div style="font-weight: 700; color: #f87171; font-size: 13px;">Truck #PF-112 (Tata Ultra)</div>
+                <div style="color: #cbd5e1; margin-top: 2px;">Driver: Suresh Kumar</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                  <span>Reefer Temp:</span>
+                  <strong style="color: #f87171;">-0.5°C (WARNING)</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Status:</span>
+                  <span style="color: #f59e0b;">Delayed +35m (Traffic)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- HUD Overlay Details -->
+            <div class="map-hud-overlay">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="gps-hud-stat">
+                  <span class="gps-hud-stat-title">Fleet Telemetry Status</span>
+                  <span class="gps-hud-stat-val" style="color: #38bdf8;">ACTIVE MONITORING</span>
+                </div>
+                <div class="gps-hud-stat">
+                  <span class="gps-hud-stat-title">Avg Compartment Temp</span>
+                  <span class="gps-hud-stat-val">-1.9°C (Optimal)</span>
+                </div>
+                <div class="gps-hud-stat">
+                  <span class="gps-hud-stat-title">Sensors Reporting</span>
+                  <span class="gps-hud-stat-val">18/18 Online</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Map Legend -->
+            <div class="map-legend">
+              <div class="map-legend-item">
+                <div class="legend-dot" style="background: #0284c7;"></div>
+                <span>In-Transit Normal</span>
+              </div>
+              <div class="map-legend-item">
+                <div class="legend-dot" style="background: #ef4444;"></div>
+                <span>Delayed / Temp Warning</span>
+              </div>
+              <div class="map-legend-item">
+                <div class="legend-dot" style="background: #10b981;"></div>
+                <span>Delivery Hubs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Fleet Cards Grid -->
+      <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">Active Vehicle Manifests</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 32px;" id="vehicleManifestCards">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Complete Journeys Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Fleet Journey Log & Dispatch History</h2>
+            <span class="card-subtitle">Complete records of refrigerated transport dispatches</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Vehicle & Truck No.</th>
+                <th>Driver Name</th>
+                <th>Origin Pond</th>
+                <th>Destination</th>
+                <th>Departure Time</th>
+                <th>ETA / Completion</th>
+                <th>Reefer Temp</th>
+                <th>Cargo Load</th>
+                <th>Journey Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="gpsJourneysTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  function renderFleetManifests() {
+    const container = document.getElementById('vehicleManifestCards');
+    if (!container) return;
+
+    let html = '';
+    PondData.gpsJourneys.forEach(trk => {
+      let tempClass = trk.tempStatus === 'Warning' ? 'warning' : 'optimal';
+      let statusBadge = trk.status === 'Completed' ? 'status-completed' : (trk.status === 'Delayed' ? 'status-delayed' : (trk.status === 'Scheduled' ? 'status-scheduled' : 'status-in-transit'));
+
+      html += `
+        <div class="card" style="margin-bottom: 0;">
+          <div class="card-header" style="background: #fafbfc;">
+            <div>
+              <div style="font-size: 15px; font-weight: 700; color: #0f172a;">${trk.vehicleNumber}</div>
+              <div style="font-size: 12px; color: #64748b;">Driver: <strong>${trk.driverName}</strong> (${trk.driverPhone})</div>
+            </div>
+            <span class="status-badge ${statusBadge}">${trk.statusBadge}</span>
+          </div>
+
+          <div class="card-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <div>
+                <span style="font-size: 11.5px; color: #64748b;">REFRIGERATION</span>
+                <div>
+                  <span class="telemetry-gauge ${tempClass}">${trk.currentReeferTemp} (${trk.tempStatus})</span>
+                </div>
+              </div>
+              <div>
+                <span style="font-size: 11.5px; color: #64748b;">SPEED / FUEL</span>
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">${trk.speed} • ${trk.fuelLevel}</div>
+              </div>
+              <div>
+                <span style="font-size: 11.5px; color: #64748b;">ETA WINDOW</span>
+                <div style="font-size: 13.5px; font-weight: 700; color: #0284c7;">${trk.eta}</div>
+              </div>
+            </div>
+
+            <!-- Route Progress Bar -->
+            <div style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span style="color: #64748b;">${trk.completedDistanceKm} km completed</span>
+                <span style="font-weight: 700; color: #0f172a;">${trk.progressPercent}% of ${trk.totalDistanceKm} km</span>
+              </div>
+              <div style="height: 6px; width: 100%; background: #e2e8f0; border-radius: 99px; overflow: hidden;">
+                <div style="height: 100%; width: ${trk.progressPercent}%; background: ${trk.status === 'Delayed' ? '#ef4444' : '#0284c7'}; border-radius: 99px;"></div>
+              </div>
+            </div>
+
+            <div style="font-size: 12.5px; color: #475569; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+              <div style="margin-bottom: 3px;"><strong>From:</strong> ${trk.origin}</div>
+              <div style="margin-bottom: 3px;"><strong>To:</strong> ${trk.destination}</div>
+              <div><strong>Cargo:</strong> ${trk.cargoSummary}</div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-sm btn-secondary" style="flex: 1;" onclick="pingDriver('${trk.driverName}')">Ping Driver</button>
+              <button type="button" class="btn btn-sm btn-primary" style="flex: 1;" onclick="selectTruckJourney('${trk.id}')">Full Telemetry</button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function renderJourneysTable() {
+    const tbody = document.getElementById('gpsJourneysTableBody');
+    if (!tbody) return;
+
+    let html = '';
+    PondData.gpsJourneys.forEach(j => {
+      let badgeClass = j.status === 'Completed' ? 'status-completed' : (j.status === 'Delayed' ? 'status-delayed' : (j.status === 'Scheduled' ? 'status-scheduled' : 'status-in-transit'));
+
+      html += `
+        <tr>
+          <td><span class="cell-primary">${j.vehicleNumber}</span></td>
+          <td>
+            <div class="cell-primary">${j.driverName}</div>
+            <div class="cell-secondary">${j.driverPhone}</div>
+          </td>
+          <td><span style="font-size: 13px;">${j.origin}</span></td>
+          <td><span style="font-size: 13px; font-weight: 500;">${j.destination}</span></td>
+          <td><span style="font-size: 12.5px; color: #64748b;">${j.startTime}</span></td>
+          <td><strong style="color: #0284c7;">${j.eta}</strong></td>
+          <td>
+            <strong style="color: ${j.tempStatus === 'Warning' ? '#ef4444' : '#059669'};">${j.currentReeferTemp}</strong>
+          </td>
+          <td><span style="font-size: 12px; color: #475569;">${j.cargoSummary}</span></td>
+          <td><span class="status-badge ${badgeClass}">${j.status}</span></td>
+          <td style="text-align: right;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="selectTruckJourney('${j.id}')">View</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function selectTruckJourney(id) {
+    const trk = PondData.gpsJourneys.find(t => t.id === id);
+    if (!trk) return;
+
+    let waypointsHtml = '';
+    trk.routeWaypoints.forEach(wp => {
+      let iconColor = wp.status === 'Departed' || wp.status === 'Passed' || wp.status === 'Delivered' ? '#10b981' : (wp.status.includes('Delayed') || wp.status.includes('Congestion') ? '#ef4444' : '#64748b');
+
+      waypointsHtml += `
+        <div style="display: flex; gap: 12px; padding: 8px 0; border-left: 2px solid ${iconColor}; padding-left: 14px; position: relative; margin-left: 6px;">
+          <div style="position: absolute; left: -6px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: ${iconColor};"></div>
+          <div>
+            <div style="font-weight: 600; font-size: 13.5px; color: #0f172a;">${wp.name}</div>
+            <div style="font-size: 12px; color: #64748b;">${wp.time} • <strong style="color: ${iconColor};">${wp.status}</strong></div>
+          </div>
+        </div>
+      `;
+    });
+
+    const body = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 16px; color: #0284c7;">${trk.vehicleNumber}</span>
+            <span class="status-badge status-${trk.status.toLowerCase()}">${trk.statusBadge}</span>
+          </div>
+          <div style="font-size: 14.5px; font-weight: 600; color: #0f172a;">Assigned Driver: ${trk.driverName}</div>
+          <div style="font-size: 12.5px; color: #64748b;">Phone: ${trk.driverPhone} • CDL Class A Verified</div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">Reefer Cooling Unit Diagnostics</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+              <span style="font-size: 11.5px; color: #64748b;">CURRENT TEMP</span>
+              <div style="font-size: 20px; font-weight: 800; color: ${trk.tempStatus === 'Warning' ? '#ef4444' : '#059669'};">${trk.currentReeferTemp}</div>
+              <span style="font-size: 11px; color: #64748b;">Target: ${trk.targetTemp}</span>
+            </div>
+            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+              <span style="font-size: 11.5px; color: #64748b;">COOLING HEALTH</span>
+              <div style="font-size: 20px; font-weight: 800; color: #0284c7;">${trk.tempStatus}</div>
+              <span style="font-size: 11px; color: #64748b;">Diesel Aux Engine: OK</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">Waypoints & Transit Milestones</h4>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+            ${waypointsHtml}
+          </div>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; font-size: 13px; color: #166534;">
+          <strong>Cargo Manifest:</strong> ${trk.cargoSummary}
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button type="button" class="btn btn-secondary" onclick="pingDriver('${trk.driverName}')">Send Direct Message</button>
+      <button type="button" class="btn btn-primary" onclick="PondApp.toast('Cold-chain telemetry report generated for ${trk.vehicleNumber}', 'success')">Export Sensor Log</button>
+    `;
+
+    PondApp.openDrawer(`Telemetry Diagnostics – ${trk.vehicleNumber.split('(')[0]}`, body, footer);
+  }
+
+  function pingDriver(name) {
+    PondApp.toast(`Ping transmitted via SAT-COM to ${name}. Driver acknowledged on cab terminal.`, 'success');
+  }
+
+  function simulatePingAll() {
+    PondApp.toast('Transponders queried across all 6 vehicles. 100% telemetry synced.', 'info');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderFleetManifests();
+    renderJourneysTable();
+  });
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Trail & System Logs – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Administrative Audit Trail & Immutable Log</h1>
+            <span class="status-badge status-optimal">SOC2 Compliance Mode</span>
+          </div>
+          <p class="page-subtitle">Track administrative actions, threshold updates, dispatch assignments, and security-sensitive permission modifications.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportAuditCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Audit Log</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Logged Administrative Actions</span>
+            <div class="kpi-icon-pill primary"><span data-icon="audit"></span></div>
+          </div>
+          <div class="kpi-value">1,428</div>
+          <div class="kpi-bottom"><span class="trend-badge up">100% Retained</span><span class="trend-period">Past 90-day retention</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Security Incident Logs</span>
+            <div class="kpi-icon-pill danger"><span data-icon="security"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #dc2626;">1 Event</div>
+          <div class="kpi-bottom"><span class="trend-badge down">Resolved</span><span class="trend-period">Session revoked</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Financial Approvals</span>
+            <div class="kpi-icon-pill warning"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">14 Actions</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Dual Auth</span><span class="trend-period">Refunds & adjustments</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Automated System Agents</span>
+            <div class="kpi-icon-pill info"><span data-icon="truck"></span></div>
+          </div>
+          <div class="kpi-value">6 Daemon Jobs</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Optimal</span><span class="trend-period">Telemetry collection</span></div>
+        </div>
+      </div>
+
+      <!-- Audit Trail Table Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="auditSearchInput" placeholder="Search action, administrator, IP address, module...">
+            </div>
+
+            <select class="select-filter" id="auditModuleFilter">
+              <option value="ALL">All Modules</option>
+              <option value="Fish Management">Fish Management</option>
+              <option value="GPS Logistics">GPS Logistics</option>
+              <option value="Transactions">Transactions</option>
+              <option value="Discounts">Discounts</option>
+              <option value="Admin Security">Admin Security</option>
+              <option value="Aquaculture Ops">Aquaculture Ops</option>
+            </select>
+
+            <select class="select-filter" id="auditSeverityFilter">
+              <option value="ALL">All Severity Levels</option>
+              <option value="Info">Info</option>
+              <option value="Warning">Warning</option>
+              <option value="Security">Security</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetAuditFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Administrator / Actor</th>
+                <th>Action Performed</th>
+                <th>Target Module</th>
+                <th>Operational Change Details</th>
+                <th>Source IP Address</th>
+                <th>Timestamp</th>
+                <th>Severity</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let auditList = [...PondData.auditLogs];
+
+  function renderAuditTable(list) {
+    const tbody = document.getElementById('auditTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 32px; color: #64748b;">No audit records match query.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(a => {
+      let badgeClass = 'status-optimal';
+      if (a.severity === 'Warning') badgeClass = 'status-warning';
+      else if (a.severity === 'Security') badgeClass = 'status-danger';
+
+      html += `
+        <tr>
+          <td><span class="cell-primary" style="font-family: monospace;">${a.id}</span></td>
+          <td>
+            <div class="cell-primary">${a.admin}</div>
+            <div class="cell-secondary">${a.role}</div>
+          </td>
+          <td><strong style="color: #0f172a; font-size: 13.5px;">${a.action}</strong></td>
+          <td>
+            <span style="font-size: 12px; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">
+              ${a.module}
+            </span>
+          </td>
+          <td>
+            <div style="max-width: 420px; font-size: 12.5px; color: #475569; line-height: 1.4;">${a.details}</div>
+          </td>
+          <td><span style="font-family: monospace; font-size: 12px; color: #64748b;">${a.ipAddress}</span></td>
+          <td><span style="font-size: 12px; color: #64748b;">${a.timestamp}</span></td>
+          <td><span class="status-badge ${badgeClass}">${a.severity}</span></td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function filterAudit() {
+    const search = document.getElementById('auditSearchInput').value.toLowerCase();
+    const mod = document.getElementById('auditModuleFilter').value;
+    const sev = document.getElementById('auditSeverityFilter').value;
+
+    const filtered = auditList.filter(a => {
+      const matchSearch = !search || a.action.toLowerCase().includes(search) || a.admin.toLowerCase().includes(search) || a.details.toLowerCase().includes(search) || a.ipAddress.includes(search);
+      const matchMod = mod === 'ALL' || a.module === mod;
+      const matchSev = sev === 'ALL' || a.severity === sev;
+      return matchSearch && matchMod && matchSev;
+    });
+
+    renderAuditTable(filtered);
+  }
+
+  function resetAuditFilters() {
+    document.getElementById('auditSearchInput').value = '';
+    document.getElementById('auditModuleFilter').value = 'ALL';
+    document.getElementById('auditSeverityFilter').value = 'ALL';
+    renderAuditTable(auditList);
+  }
+
+  function exportAuditCSV() {
+    const headers = ['Log ID', 'Administrator', 'Role', 'Action', 'Module', 'Details', 'IP Address', 'Timestamp', 'Severity'];
+    const rows = auditList.map(a => [a.id, a.admin, a.role, a.action, a.module, a.details, a.ipAddress, a.timestamp, a.severity]);
+    PondApp.exportTableToCSV('PondFish_Audit_Trail_Log.csv', headers, rows);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderAuditTable(auditList);
+    document.getElementById('auditSearchInput').addEventListener('input', filterAudit);
+    document.getElementById('auditModuleFilter').addEventListener('change', filterAudit);
+    document.getElementById('auditSeverityFilter').addEventListener('change', filterAudit);
+  });
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workers & Field Staff – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Field Staff & Cold-Chain Fleet Personnel</h1>
+            <span class="status-badge status-optimal">42 Active Employees</span>
+          </div>
+          <p class="page-subtitle">Roster management for refrigerated vehicle drivers, pond aquaculture biologists, harvest specialists, and quality inspectors.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="exportWorkersCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Roster</span>
+          </button>
+          <button type="button" class="btn btn-primary" onclick="openAddWorkerModal()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add Staff Member</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Field Workforce</span>
+            <div class="kpi-icon-pill primary"><span data-icon="workers"></span></div>
+          </div>
+          <div class="kpi-value">42 Staff</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Fully Staffed</span><span class="trend-period">Drivers, Agronomists, Crew</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active On Duty</span>
+            <div class="kpi-icon-pill success"><span data-icon="check"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #059669;">34 On Duty</div>
+          <div class="kpi-bottom"><span class="trend-badge up">95.5% Shift Rate</span><span class="trend-period">Current day shift</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Fleet Drivers In Transit</span>
+            <div class="kpi-icon-pill info"><span data-icon="truck"></span></div>
+          </div>
+          <div class="kpi-value">6 Drivers</div>
+          <div class="kpi-bottom"><span class="trend-badge up">On Schedule</span><span class="trend-period">Delivering to restaurants</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Off Duty / Relief</span>
+            <div class="kpi-icon-pill warning"><span data-icon="audit"></span></div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">2 Standby</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Shift Rotation</span><span class="trend-period">Night shift relief</span></div>
+        </div>
+      </div>
+
+      <!-- Workers Table Card -->
+      <div class="card">
+        <div class="table-filter-bar">
+          <div class="filter-group-left">
+            <div class="table-search-box">
+              <span class="search-icon-left"><span data-icon="search"></span></span>
+              <input type="text" class="table-search-input" id="wrkSearchInput" placeholder="Search staff name, role, vehicle, department...">
+            </div>
+
+            <select class="select-filter" id="wrkDeptFilter">
+              <option value="ALL">All Departments</option>
+              <option value="Cold-Chain">Cold-Chain Logistics</option>
+              <option value="Aquaculture">Aquaculture Operations</option>
+              <option value="Retail">Retail & Gourmet Fleet</option>
+            </select>
+
+            <select class="select-filter" id="wrkStatusFilter">
+              <option value="ALL">All Duty Statuses</option>
+              <option value="On Duty">On Duty</option>
+              <option value="In Transit">In Transit</option>
+              <option value="Off Duty">Off Duty</option>
+              <option value="Standby">Standby</option>
+            </select>
+          </div>
+
+          <div class="filter-group-right">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetWorkerFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Staff Member</th>
+                <th>Role & Department</th>
+                <th>Assigned Fleet / Facility</th>
+                <th>Certifications & License</th>
+                <th>Contact Hotline</th>
+                <th>Rating</th>
+                <th>Deliveries</th>
+                <th>Duty Location</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="workersTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Add Worker Modal -->
+<div class="modal-backdrop" id="workerModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div class="modal-title">Add New Staff Member</div>
+      <button type="button" class="modal-close-btn" onclick="PondApp.closeModal('workerModal')">
+        <span data-icon="close"></span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="workerForm" onsubmit="handleSaveWorker(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" class="form-control" id="wName" placeholder="e.g. Anand Murthy" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department <span class="required">*</span></label>
+            <select class="form-control" id="wDept" required>
+              <option value="Cold-Chain Logistics">Cold-Chain Logistics</option>
+              <option value="Aquaculture Operations">Aquaculture Operations</option>
+              <option value="Retail & Gourmet Fleet">Retail & Gourmet Fleet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Assigned Role Title <span class="required">*</span></label>
+            <input type="text" class="form-control" id="wRole" placeholder="e.g. Senior Reefer Driver" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">License / Certification <span class="required">*</span></label>
+            <input type="text" class="form-control" id="wLicense" placeholder="e.g. Heavy Commercial CDL Class A" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact Phone <span class="required">*</span></label>
+            <input type="text" class="form-control" id="wPhone" placeholder="+1 (555) 019-3382" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Assigned Vehicle / Station</label>
+            <input type="text" class="form-control" id="wVehicle" placeholder="e.g. Truck #PF-104 or Mobile Lab">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent;">
+          <button type="button" class="btn btn-secondary" onclick="PondApp.closeModal('workerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Save Staff Record</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  let workerList = [...PondData.workers];
+
+  function renderWorkersTable(list) {
+    const tbody = document.getElementById('workersTableBody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 32px; color: #64748b;">No workers match filter.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(w => {
+      let badgeClass = w.status === 'On Duty' ? 'status-optimal' : (w.status === 'In Transit' ? 'status-in-transit' : (w.status === 'Standby' ? 'status-warning' : 'status-danger'));
+
+      html += `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 34px; height: 34px; border-radius: 50%; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">
+                ${w.name.split(' ').map(n=>n[0]).join('')}
+              </div>
+              <div>
+                <div class="cell-primary">${w.name}</div>
+                <div class="cell-secondary">ID: ${w.id}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: #0f172a;">${w.role}</div>
+            <div class="cell-secondary">${w.department}</div>
+          </td>
+          <td>
+            <strong style="color: #0284c7; font-size: 13px;">${w.assignedVehicle}</strong>
+            <div class="cell-secondary">${w.assignedRoute}</div>
+          </td>
+          <td><span style="font-size: 12px; color: #475569;">${w.licenseClass}</span></td>
+          <td>
+            <div style="font-size: 13px; font-weight: 500;">${w.phone}</div>
+            <div class="cell-secondary">${w.email}</div>
+          </td>
+          <td><strong style="color: #f59e0b; font-size: 13px;">${w.rating}</strong></td>
+          <td><strong style="color: #059669; font-size: 14px;">${w.deliveriesCompleted}</strong></td>
+          <td><span style="font-size: 12px; color: #475569;">${w.dutyLocation}</span></td>
+          <td><span class="status-badge ${badgeClass}">${w.status}</span></td>
+          <td style="text-align: right;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="viewWorkerDrawer('${w.id}')">Dossier</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  function filterWorkers() {
+    const search = document.getElementById('wrkSearchInput').value.toLowerCase();
+    const dept = document.getElementById('wrkDeptFilter').value;
+    const status = document.getElementById('wrkStatusFilter').value;
+
+    const filtered = workerList.filter(w => {
+      const matchSearch = !search || w.name.toLowerCase().includes(search) || w.role.toLowerCase().includes(search) || w.assignedVehicle.toLowerCase().includes(search);
+      const matchDept = dept === 'ALL' || w.department.toLowerCase().includes(dept.toLowerCase());
+      const matchStatus = status === 'ALL' || w.status === status;
+      return matchSearch && matchDept && matchStatus;
+    });
+
+    renderWorkersTable(filtered);
+  }
+
+  function resetWorkerFilters() {
+    document.getElementById('wrkSearchInput').value = '';
+    document.getElementById('wrkDeptFilter').value = 'ALL';
+    document.getElementById('wrkStatusFilter').value = 'ALL';
+    renderWorkersTable(workerList);
+  }
+
+  function viewWorkerDrawer(id) {
+    const w = workerList.find(item => item.id === id);
+    if (!w) return;
+
+    const html = `
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-family: monospace; font-size: 15px; font-weight: 700; color: #0284c7;">${w.id}</span>
+            <span class="status-badge status-${w.status.toLowerCase().replace(' ', '-')}">${w.status}</span>
+          </div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a;">${w.name}</h3>
+          <p style="font-size: 13px; color: #64748b; margin-top: 2px;">${w.role} • ${w.department}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+            <span style="font-size: 11.5px; color: #64748b;">DISPATCHES COMPLETED</span>
+            <div style="font-size: 20px; font-weight: 800; color: #059669;">${w.deliveriesCompleted}</div>
+          </div>
+          <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+            <span style="font-size: 11.5px; color: #64748b;">SAFETY & SPEED RATING</span>
+            <div style="font-size: 20px; font-weight: 800; color: #0284c7;">${w.rating}</div>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">Assigned Truck:</span>
+            <strong style="color: #0284c7;">${w.assignedVehicle}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">Active Route Corridor:</span>
+            <strong>${w.assignedRoute}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">CDL / Certification:</span>
+            <strong>${w.licenseClass}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+            <span style="color: #64748b;">Hotline:</span>
+            <strong>${w.phone}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748b;">Current Check-in Location:</span>
+            <strong style="color: #059669;">${w.dutyLocation}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = `
+      <button type="button" class="btn btn-secondary" onclick="PondApp.toast('SMS dispatch broadcast sent to ${w.name}', 'info')">Message Driver</button>
+      <button type="button" class="btn btn-primary" onclick="PondApp.closeDrawer()">Close</button>
+    `;
+
+    PondApp.openDrawer(`Personnel Dossier – ${w.name}`, html, footer);
+  }
+
+  function openAddWorkerModal() {
+    document.getElementById('workerForm').reset();
+    PondApp.openModal('workerModal');
+  }
+
+  function handleSaveWorker(e) {
+    e.preventDefault();
+    const name = document.getElementById('wName').value;
+    const dept = document.getElementById('wDept').value;
+    const role = document.getElementById('wRole').value;
+    const license = document.getElementById('wLicense').value;
+    const phone = document.getElementById('wPhone').value;
+    const veh = document.getElementById('wVehicle').value || 'Unassigned Fleet';
+
+    const newId = "WRK-" + (200 + workerList.length + 1);
+    workerList.unshift({
+      id: newId,
+      name: name,
+      role: role,
+      department: dept,
+      phone: phone,
+      email: name.toLowerCase().replace(' ', '.') + "@pondfish.ops",
+      assignedVehicle: veh,
+      assignedRoute: "Central Metro Distribution",
+      licenseClass: license,
+      rating: "5.0 / 5.0",
+      deliveriesCompleted: 0,
+      status: "On Duty",
+      dutyLocation: "Depot Central Station"
+    });
+
+    PondApp.closeModal('workerModal');
+    renderWorkersTable(workerList);
+    PondApp.toast(`Staff member "${name}" registered into roster!`, 'success');
+  }
+
+  function exportWorkersCSV() {
+    const headers = ['Worker ID', 'Name', 'Role', 'Department', 'Assigned Vehicle', 'Phone', 'Rating', 'Deliveries', 'Status'];
+    const rows = workerList.map(w => [w.id, w.name, w.role, w.department, w.assignedVehicle, w.phone, w.rating, w.deliveriesCompleted, w.status]);
+    PondApp.exportTableToCSV('PondFish_Staff_Roster.csv', headers, rows);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderWorkersTable(workerList);
+    document.getElementById('wrkSearchInput').addEventListener('input', filterWorkers);
+    document.getElementById('wrkDeptFilter').addEventListener('change', filterWorkers);
+    document.getElementById('wrkStatusFilter').addEventListener('change', filterWorkers);
+  });
+</script>
+
+</body>
+</html>
+

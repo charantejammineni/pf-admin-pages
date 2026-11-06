@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Settings – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Enterprise Business Settings</h1>
+            <span class="status-badge status-optimal">Configuration Active</span>
+          </div>
+          <p class="page-subtitle">Configure commercial aquaculture parameters, logistics rules, payment gateways, and company profiles.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <button type="button" class="btn btn-secondary" onclick="resetSettingsForm()">Discard Changes</button>
+          <button type="button" class="btn btn-primary" onclick="saveAllSettings()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Save Configuration</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings Navigation Tabs -->
+      <div class="tab-nav">
+        <button type="button" class="tab-btn active" onclick="switchSettingsTab('profileTab', this)">Business Profile</button>
+        <button type="button" class="tab-btn" onclick="switchSettingsTab('logisticsTab', this)">Cold-Chain & Logistics</button>
+        <button type="button" class="tab-btn" onclick="switchSettingsTab('pondsTab', this)">Aquaculture Ponds</button>
+        <button type="button" class="tab-btn" onclick="switchSettingsTab('paymentsTab', this)">Payment Gateways</button>
+        <button type="button" class="tab-btn" onclick="switchSettingsTab('notifPrefTab', this)">Notification Preferences</button>
+      </div>
+
+      <!-- TAB 1: Business Profile -->
+      <div class="tab-pane active" id="profileTab">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Corporate Legal Entity & Licensing</h2>
+              <span class="card-subtitle">Official registration details printed on bills of lading and tax invoices</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="settingsProfileForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Legal Entity Name <span class="required">*</span></label>
+                  <input type="text" class="form-control" id="legalName" value="PondFish Aquaculture & Logistics Enterprise LLC" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Brand Trading Name <span class="required">*</span></label>
+                  <input type="text" class="form-control" id="brandName" value="PondFish" required>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Federal Tax ID (EIN) / VAT <span class="required">*</span></label>
+                  <input type="text" class="form-control" id="taxEin" value="US-EIN-84-9921405" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Aquaculture Commercial License No. <span class="required">*</span></label>
+                  <input type="text" class="form-control" id="aquaLicense" value="AQUA-CERT-2026-99120" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Corporate Headquarters Address <span class="required">*</span></label>
+                <input type="text" class="form-control" id="hqAddress" value="4200 Blue Ocean Way, Suite 800, Austin, TX 78701" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Operations Support Email <span class="required">*</span></label>
+                  <input type="email" class="form-control" id="supportEmail" value="ops@pondfish.com" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Dispatch Desk Hotline <span class="required">*</span></label>
+                  <input type="text" class="form-control" id="supportPhone" value="+1 (800) 555-POND (7663)" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Public Brand Tagline</label>
+                <input type="text" class="form-control" id="brandTagline" value="Sustainable Aquaculture & Farm-to-Table Cold Chain Delivery">
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Cold-Chain & Logistics -->
+      <div class="tab-pane" id="logisticsTab">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Reefer Temperature & Fleet Dispatch Rules</h2>
+              <span class="card-subtitle">Automated thresholds for vehicle telemetry and harvest allocation</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Operating Logistics Window</label>
+                <input type="text" class="form-control" value="04:00 AM – 10:00 PM CST">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Primary Early Harvest Dispatch Slot</label>
+                <input type="text" class="form-control" value="05:30 AM Daily">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Target Cold-Chain Temperature (°C) <span class="required">*</span></label>
+                <input type="text" class="form-control" value="-2.5°C (Reefer Standard)">
+                <span class="form-hint">Baseline setpoint for all refrigerated truck compressors.</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Critical Alarm Threshold Temp (°C) <span class="required">*</span></label>
+                <input type="text" class="form-control" value="-0.5°C">
+                <span class="form-hint">Triggers immediate SMS to driver and central ops dispatcher.</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Auto-Assign Trucks on Booking Confirmation</label>
+                <select class="form-control">
+                  <option value="enabled" selected>Enabled (Optimizes closest depot & payload)</option>
+                  <option value="disabled">Disabled (Manual dispatcher review required)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Maximum Heavy Vehicle Payload Limit</label>
+                <input type="text" class="form-control" value="8,500 kg per 8-Ton Fleet Unit">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Aquaculture Ponds -->
+      <div class="tab-pane" id="pondsTab">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Monitored Aquaculture Ponds & Water Quality Norms</h2>
+              <span class="card-subtitle">Active aquaculture facilities and automated IoT telemetry setpoints</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" onclick="PondApp.toast('New pond registered', 'success')">+ Register New Pond</button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Pond Code</th>
+                    <th>Facility Location</th>
+                    <th>Primary Species</th>
+                    <th>Target Salinity</th>
+                    <th>Min Dissolved Oxygen</th>
+                    <th>Lead Agronomist</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong style="color: #0284c7;">POND-DELTA-4</strong></td>
+                    <td>Coastal Delta Brackish Zone</td>
+                    <td>Black Tiger Prawns (Jumbo)</td>
+                    <td>18.0 ppt</td>
+                    <td>6.5 mg/L</td>
+                    <td>Dr. Meenakshi Sundaram</td>
+                    <td><span class="status-badge status-optimal">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong style="color: #0284c7;">POND-KRISHNA-2</strong></td>
+                    <td>Krishna Basin Flow-Through</td>
+                    <td>Freshwater Salmon Trout</td>
+                    <td>0.0 ppt (Chilled)</td>
+                    <td>7.2 mg/L</td>
+                    <td>Arjun Nambiar</td>
+                    <td><span class="status-badge status-optimal">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong style="color: #0284c7;">POND-DELTA-2</strong></td>
+                    <td>Saline Estuary Delta</td>
+                    <td>Asian Sea Bass (Barramundi)</td>
+                    <td>12.5 ppt</td>
+                    <td>6.0 mg/L</td>
+                    <td>Dr. Meenakshi Sundaram</td>
+                    <td><span class="status-badge status-optimal">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong style="color: #0284c7;">POND-GODAVARI-5</strong></td>
+                    <td>Godavari Inland Farm Complex</td>
+                    <td>Rohu & Catla Major Carp</td>
+                    <td>0.0 ppt</td>
+                    <td>5.8 mg/L</td>
+                    <td>Manoj Singh</td>
+                    <td><span class="status-badge status-optimal">Active</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: Payment Gateways -->
+      <div class="tab-pane" id="paymentsTab">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Commercial Payment Processors & Escrow</h2>
+              <span class="card-subtitle">Connected payment rails for client invoicing and automatic settlements</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              <!-- Stripe Connector -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fafbfc;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <div style="width: 44px; height: 44px; border-radius: 8px; background: #6366f1; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+                    S
+                  </div>
+                  <div>
+                    <h3 style="font-size: 15px; font-weight: 700; color: #0f172a;">Stripe Connect & Card Processing</h3>
+                    <p style="font-size: 12.5px; color: #64748b;">Live account linked: acct_1N9284PondFishLive (Visa, MasterCard, Amex)</p>
+                  </div>
+                </div>
+                <span class="status-badge status-optimal">Live Connected</span>
+              </div>
+
+              <!-- ACH Wire Rail -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fafbfc;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <div style="width: 44px; height: 44px; border-radius: 8px; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+                    ACH
+                  </div>
+                  <div>
+                    <h3 style="font-size: 15px; font-weight: 700; color: #0f172a;">Commercial Wire Transfer / Direct Bank Clearing</h3>
+                    <p style="font-size: 12.5px; color: #64748b;">Escrow account linked with JPMorgan Chase Commercial Payouts</p>
+                  </div>
+                </div>
+                <span class="status-badge status-optimal">Verified</span>
+              </div>
+
+              <div class="form-row" style="margin-top: 8px;">
+                <div class="form-group">
+                  <label class="form-label">Default Aquaculture Sales Tax (GST / Sales Tax)</label>
+                  <input type="text" class="form-control" value="8.25%">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Automated Merchant Payout Cadence</label>
+                  <select class="form-control">
+                    <option value="daily" selected>Daily Auto-Settlement (11:00 PM CST)</option>
+                    <option value="weekly">Weekly Every Monday</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: Notification Preferences -->
+      <div class="tab-pane" id="notifPrefTab">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Operational Alert Routing & Dispatch Notifications</h2>
+              <span class="card-subtitle">Manage push, SMS, and email alerts for critical cold-chain events</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">Reefer Temperature Spike Alarms (SMS + Audio Alert)</div>
+                  <div style="font-size: 12px; color: #64748b;">Sends urgent SMS to driver and central operations when reefer rises above -0.5°C</div>
+                </div>
+                <input type="checkbox" checked style="width: 18px; height: 18px;">
+              </label>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">New High-Volume Booking Received (Email Notification)</div>
+                  <div style="font-size: 12px; color: #64748b;">Notifies farm harvest manager whenever a commercial order exceeds 100kg</div>
+                </div>
+                <input type="checkbox" checked style="width: 18px; height: 18px;">
+              </label>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">Pond Dissolved Oxygen Level Warnings</div>
+                  <div style="font-size: 12px; color: #64748b;">Alerts pond agronomists when IoT aerator drops below safe threshold (6.0 mg/L)</div>
+                </div>
+                <input type="checkbox" checked style="width: 18px; height: 18px;">
+              </label>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">Daily Morning Dispatch Manifest Summary (05:00 AM)</div>
+                  <div style="font-size: 12px; color: #64748b;">Consolidated PDF report of all departing reefer vehicles and client deliveries</div>
+                </div>
+                <input type="checkbox" checked style="width: 18px; height: 18px;">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  function switchSettingsTab(tabId, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+    btn.classList.add('active');
+    const target = document.getElementById(tabId);
+    if (target) target.classList.add('active');
+  }
+
+  function saveAllSettings() {
+    PondApp.toast('Enterprise business settings updated successfully!', 'success');
+  }
+
+  function resetSettingsForm() {
+    PondApp.toast('Changes discarded; original values restored.', 'info');
+  }
+</script>
+
+</body>
+</html>
+

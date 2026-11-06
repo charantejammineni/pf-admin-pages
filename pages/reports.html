@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Data Exports – PondFish Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <div id="sidebar-container"></div>
+
+  <main class="app-main">
+    <div id="header-container"></div>
+
+    <div class="page-container">
+      <div class="page-header">
+        <div class="page-header-info">
+          <div class="page-title-row">
+            <h1 class="page-title">Executive Reports & Data Analytics</h1>
+            <span class="status-badge status-optimal">Analytics Engine v2.4</span>
+          </div>
+          <p class="page-subtitle">Analyze revenue streams, fleet logistics efficiency, harvest yields, and export commercial compliance datasets.</p>
+        </div>
+
+        <div class="page-actions-group">
+          <!-- Export CSV Trigger -->
+          <button type="button" class="btn btn-secondary" onclick="exportMasterReportCSV()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV Dataset</span>
+          </button>
+
+          <!-- Export PDF Trigger -->
+          <button type="button" class="btn btn-primary" onclick="generateExecutivePDF()">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Generate Executive PDF Report</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Generation Control Card -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header" style="background: #fafbfc;">
+          <div class="card-title-group">
+            <h2 class="card-title">Custom Report Builder</h2>
+            <span class="card-subtitle">Filter cohorts and select metrics for on-demand synthesis</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Report Category</label>
+              <select class="form-control" id="repCategorySelect">
+                <option value="revenue" selected>Commercial Sales & Financial Revenue</option>
+                <option value="logistics">Cold-Chain Reefer Fleet Telemetry</option>
+                <option value="harvest">Aquaculture Ponds Harvest Yield</option>
+                <option value="workers">Worker Performance & Driver Milestones</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Date Range Period</label>
+              <select class="form-control" id="repPeriodSelect">
+                <option value="month" selected>Current Month (November 2026)</option>
+                <option value="quarter">Q4 2026 (Oct - Dec)</option>
+                <option value="year">Full Year 2026 (YTD)</option>
+                <option value="custom">Custom Date Cohort...</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Grouping Dimension</label>
+              <select class="form-control">
+                <option value="channel">By Sales Channel (B2B / Retail / Sub)</option>
+                <option value="species">By Fish / Shellfish Variety</option>
+                <option value="pond">By Harvest Pond Facility</option>
+              </select>
+            </div>
+
+            <button type="button" class="btn btn-primary" style="height: 40px;" onclick="runReportQuery()">
+              <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <span>Compile Live Report</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Metric Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">YTD Net Revenue</span>
+            <div class="kpi-icon-pill primary"><span data-icon="transactions"></span></div>
+          </div>
+          <div class="kpi-value">$518,450</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 22.4% YoY</span><span class="trend-period">Exceeding 2025</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Harvest Biomass</span>
+            <div class="kpi-icon-pill success"><span data-icon="fish"></span></div>
+          </div>
+          <div class="kpi-value">48,650 kg</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 18.1%</span><span class="trend-period">Across 4 facility ponds</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Cold-Chain SLA Compliance</span>
+            <div class="kpi-icon-pill info"><span data-icon="truck"></span></div>
+          </div>
+          <div class="kpi-value">99.1%</div>
+          <div class="kpi-bottom"><span class="trend-badge up">Target: >98%</span><span class="trend-period">Reefer temp under -1.5°C</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Avg B2B Customer Lifetime Value</span>
+            <div class="kpi-icon-pill warning"><span data-icon="customers"></span></div>
+          </div>
+          <div class="kpi-value">$14,280</div>
+          <div class="kpi-bottom"><span class="trend-badge up">↑ 9.6%</span><span class="trend-period">Commercial hospitality accounts</span></div>
+        </div>
+      </div>
+
+      <!-- Report Analytics Charts Grid -->
+      <div class="dashboard-grid-equal">
+        <!-- Monthly Revenue vs Logistics Costs -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Monthly Operating Margin Comparison</h2>
+              <span class="card-subtitle">Gross revenue vs refrigerated logistics expenses (2026)</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="height: 280px; position: relative;">
+              <canvas id="reportMarginChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Harvest Biomass by Species -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2 class="card-title">Harvest Biomass Distribution (kg)</h2>
+              <span class="card-subtitle">Volume contribution by primary commercial aquaculture species</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="height: 280px; position: relative;">
+              <canvas id="reportBiomassChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Worker & Logistics Performance Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Reefer Fleet Driver & Logistics Performance Audit</h2>
+            <span class="card-subtitle">Individual driver on-time rate, deliveries completed, and cold-chain compliance</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="PondApp.toast('Exporting worker report CSV...', 'info')">Export Driver Audit</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Driver Name</th>
+                <th>Assigned Vehicle</th>
+                <th>Deliveries Completed</th>
+                <th>On-Time Fulfillment</th>
+                <th>Avg Cold-Chain Temp</th>
+                <th>Driver Quality Rating</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong style="color: #0f172a;">Vikramaditya Roy</strong></td>
+                <td>Truck #PF-104 (Volvo FL Reefer)</td>
+                <td>342 Dispatches</td>
+                <td><strong style="color: #059669;">99.4%</strong></td>
+                <td>-2.4°C</td>
+                <td>★ 4.95 / 5.0</td>
+                <td><span class="status-badge status-optimal">Exemplary</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #0f172a;">Devendra Rao</strong></td>
+                <td>Truck #PF-108 (Isuzu 14ft)</td>
+                <td>289 Dispatches</td>
+                <td><strong style="color: #059669;">98.8%</strong></td>
+                <td>-1.8°C</td>
+                <td>★ 4.88 / 5.0</td>
+                <td><span class="status-badge status-optimal">Exemplary</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #0f172a;">Ramesh Patel</strong></td>
+                <td>Truck #PF-101 (Sprinter Van)</td>
+                <td>520 Dispatches</td>
+                <td><strong style="color: #059669;">99.1%</strong></td>
+                <td>-2.0°C</td>
+                <td>★ 4.92 / 5.0</td>
+                <td><span class="status-badge status-optimal">Exemplary</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #0f172a;">Kiran Verma</strong></td>
+                <td>Truck #PF-107 (Tata Ultra)</td>
+                <td>310 Dispatches</td>
+                <td><strong style="color: #059669;">97.5%</strong></td>
+                <td>-2.8°C</td>
+                <td>★ 4.82 / 5.0</td>
+                <td><span class="status-badge status-optimal">Good</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #0f172a;">Suresh Kumar</strong></td>
+                <td>Truck #PF-112 (Tata Reefer)</td>
+                <td>215 Dispatches</td>
+                <td><strong style="color: #d97706;">94.2%</strong></td>
+                <td>-0.5°C (Temp Alert)</td>
+                <td>★ 4.70 / 5.0</td>
+                <td><span class="status-badge status-warning">Review Needed</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+  function exportMasterReportCSV() {
+    const headers = ['Category', 'Metric Indicator', 'October 2026', 'November 2026', 'Growth %', 'Variance Status'];
+    const rows = [
+      ['Commercial Revenue', 'Gross Booking Value', '$420,500', '$482,950', '+14.8%', 'Exceeding Target'],
+      ['Aquaculture Biomass', 'Harvested Weight (kg)', '41,200 kg', '48,650 kg', '+18.1%', 'Healthy Yield'],
+      ['Cold-Chain Fleet', 'Logistics Operating Expense', '$15,900', '$17,200', '+8.1%', 'Within Budget'],
+      ['Customer Accounts', 'Active B2B Repeat Clients', '1,638', '1,840', '+12.4%', 'Low Churn'],
+      ['Quality Compliance', 'Cold-Chain SLA Intact %', '98.8%', '99.1%', '+0.3%', 'Passed Audit']
+    ];
+    PondApp.exportTableToCSV('PondFish_Master_Executive_Report_2026.csv', headers, rows);
+  }
+
+  function generateExecutivePDF() {
+    PondApp.toast('Compiling high-resolution PDF Executive Report with telemetry charts...', 'info');
+    setTimeout(() => {
+      PondApp.toast('PDF Export ready: "PondFish_Operations_Summary_Q4_2026.pdf" generated!', 'success');
+    }, 1200);
+  }
+
+  function runReportQuery() {
+    const cat = document.getElementById('repCategorySelect').value;
+    const period = document.getElementById('repPeriodSelect').value;
+    PondApp.toast(`Recompiled dataset for ${cat.toUpperCase()} (${period.toUpperCase()})`, 'success');
+  }
+
+  function initReportCharts() {
+    // 1. Margin Chart
+    const mCanvas = document.getElementById('reportMarginChart');
+    if (mCanvas && typeof Chart !== 'undefined') {
+      new Chart(mCanvas, {
+        type: 'bar',
+        data: {
+          labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+          datasets: [
+            {
+              label: 'Gross Commercial Revenue ($)',
+              data: [42000, 45800, 43900, 49200, 52100, 58950],
+              backgroundColor: '#0284c7',
+              borderRadius: 6
+            },
+            {
+              label: 'Refrigerated Logistics Overheads ($)',
+              data: [13400, 14200, 13900, 15100, 15900, 17200],
+              backgroundColor: '#94a3b8',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', align: 'end' }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#f1f5f9' } }
+          }
+        }
+      });
+    }
+
+    // 2. Biomass Doughnut
+    const bCanvas = document.getElementById('reportBiomassChart');
+    if (bCanvas && typeof Chart !== 'undefined') {
+      new Chart(bCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Black Tiger Prawns', 'Salmon Trout', 'Asian Sea Bass', 'Rohu & Catla Major Carp', 'Mangrove Mud Crab'],
+          datasets: [{
+            data: [14200, 11500, 9800, 10200, 2950],
+            backgroundColor: ['#0284c7', '#38bdf8', '#06b6d4', '#10b981', '#f59e0b'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8 } }
+          }
+        }
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initReportCharts();
+  });
+</script>
+
+</body>
+</html>
+
