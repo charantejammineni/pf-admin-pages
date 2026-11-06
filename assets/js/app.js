@@ -278,7 +278,7 @@ const PondApp = {
     container.innerHTML = `
       <header class="app-header">
         <div class="header-left">
-          <button type="button" class="mobile-menu-btn" id="mobileMenuToggle">
+          <button type="button" class="topbar-sidebar-btn" id="topbarSidebarToggle" title="Toggle Navigation Sidebar">
             ${PondIcons.get('menu')}
           </button>
           <div class="header-breadcrumbs">
@@ -556,42 +556,74 @@ const PondApp = {
     }
   },
 
-  // Attach global interactions
-  attachGlobalEvents: function() {
-    // 1. Sidebar collapse toggle
+  // Unified Sidebar Collapse/Expand Toggle
+  toggleSidebar: function() {
+    const wrapper = document.querySelector('.app-wrapper');
+    const sidebar = document.getElementById('appSidebar');
     const collapseBtn = document.getElementById('sidebarCollapseToggle');
-    if (collapseBtn) {
-      collapseBtn.addEventListener('click', () => {
-        const wrapper = document.querySelector('.app-wrapper');
-        if (wrapper) {
-          wrapper.classList.toggle('sidebar-collapsed');
-          const isCollapsed = wrapper.classList.contains('sidebar-collapsed');
-          localStorage.setItem('pf_sidebar_collapsed', isCollapsed ? '1' : '0');
-        }
-      });
+    const topbarBtn = document.getElementById('topbarSidebarToggle');
 
-      // Restore collapsed state if saved
-      if (localStorage.getItem('pf_sidebar_collapsed') === '1') {
-        const wrapper = document.querySelector('.app-wrapper');
-        if (wrapper) wrapper.classList.add('sidebar-collapsed');
+    if (window.innerWidth <= 992) {
+      if (sidebar) sidebar.classList.toggle('mobile-open');
+    } else {
+      if (wrapper) {
+        wrapper.classList.toggle('sidebar-collapsed');
+        const isCollapsed = wrapper.classList.contains('sidebar-collapsed');
+        localStorage.setItem('pf_sidebar_collapsed', isCollapsed ? '1' : '0');
+        const titleText = isCollapsed ? 'Expand Navigation Sidebar' : 'Collapse Navigation Sidebar';
+        if (collapseBtn) collapseBtn.title = titleText;
+        if (topbarBtn) topbarBtn.title = titleText;
       }
     }
+  },
 
-    // 2. Mobile menu toggle
-    const mobileBtn = document.getElementById('mobileMenuToggle');
-    if (mobileBtn) {
-      mobileBtn.addEventListener('click', () => {
-        const sidebar = document.getElementById('appSidebar');
-        if (sidebar) sidebar.classList.toggle('mobile-open');
+  // Attach global interactions
+  attachGlobalEvents: function() {
+    // 1. Sidebar collapse toggle (sidebar header button)
+    const collapseBtn = document.getElementById('sidebarCollapseToggle');
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleSidebar();
       });
+    }
+
+    // 2. Topbar sidebar toggle (top header button)
+    const topbarBtn = document.getElementById('topbarSidebarToggle');
+    if (topbarBtn) {
+      topbarBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleSidebar();
+      });
+    }
+
+    // 3. Click anywhere on collapsed sidebar header to expand
+    const sidebarHeader = document.querySelector('.sidebar-header');
+    if (sidebarHeader) {
+      sidebarHeader.addEventListener('click', (e) => {
+        const wrapper = document.querySelector('.app-wrapper');
+        if (wrapper && wrapper.classList.contains('sidebar-collapsed')) {
+          this.toggleSidebar();
+        }
+      });
+    }
+
+    // Restore collapsed state if saved in localStorage (desktop only)
+    if (localStorage.getItem('pf_sidebar_collapsed') === '1' && window.innerWidth > 992) {
+      const wrapper = document.querySelector('.app-wrapper');
+      if (wrapper) wrapper.classList.add('sidebar-collapsed');
+      if (collapseBtn) collapseBtn.title = 'Expand Navigation Sidebar';
+      if (topbarBtn) topbarBtn.title = 'Expand Navigation Sidebar';
     }
 
     // Close mobile sidebar when clicking outside
     document.addEventListener('click', (e) => {
       const sidebar = document.getElementById('appSidebar');
-      const mobileBtn = document.getElementById('mobileMenuToggle');
+      const topbarBtn = document.getElementById('topbarSidebarToggle');
       if (sidebar && sidebar.classList.contains('mobile-open')) {
-        if (!sidebar.contains(e.target) && !mobileBtn.contains(e.target)) {
+        if (!sidebar.contains(e.target) && (!topbarBtn || !topbarBtn.contains(e.target))) {
           sidebar.classList.remove('mobile-open');
         }
       }
